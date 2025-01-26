@@ -135,6 +135,7 @@ function add_port {
             echo "$next_port,$type,$name,$description,$date_added" >> "$DB_FILE"
             log_action "Added port $next_port with type '$type', name '$name', description '$description', and date '$date_added'"
             echo "Port $next_port has been successfully added."
+            backup_db  # Backup after addition
         else
             echo "Operation cancelled."
         fi
@@ -145,10 +146,8 @@ function add_port {
     echo "$port,$type,$name,$description,$date_added" >> "$DB_FILE"
     log_action "Added port $port with type '$type', name '$name', description '$description', and date '$date_added'"
     echo "Port $port has been successfully added."
+    backup_db  # Backup after addition
 }
-
-
-
 
 # Delete entry by port or name
 function delete_entry {
@@ -161,6 +160,7 @@ function delete_entry {
             sed -i "/^${identifier},/d" "$DB_FILE"
             log_action "Deleted entry with port $identifier"
             echo "Entry with port $identifier has been successfully deleted."
+            backup_db  # Backup after deletion
         else
             error "No entry with port '$identifier' found in the database."
         fi
@@ -171,12 +171,12 @@ function delete_entry {
             sed -i "/,$identifier,/d" "$DB_FILE"
             log_action "Deleted entry with name $identifier"
             echo "Entry with name $identifier has been successfully deleted."
+            backup_db  # Backup after deletion
         else
             error "No entry with name '$identifier' found in the database."
         fi
     fi
 }
-
 
 # Modify an existing port entry
 function modify_port {
@@ -189,13 +189,15 @@ function modify_port {
         error "Port $port does not exist in the database."
     fi
 
-    # Modify the entry
-    # Use sed to replace the entire line corresponding to the port with the updated values
+    # Modify the entry using sed to replace the entire line corresponding to the port
     sed -i "s/^${port},.*/${port},${type},${name},${description},$(date +'%Y-%m-%d %H:%M:%S')/" "$DB_FILE"
 
     log_action "Modified port $port with type '$type', name '$name', description '$description'"
     echo "Port $port has been successfully modified."
+    backup_db  # Backup after modification
 }
+
+
 
 
 # Backup the database with unique filenames
