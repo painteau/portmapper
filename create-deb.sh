@@ -21,11 +21,11 @@ fi
 
 echo "Extracted package version: $PACKAGE_VERSION"
 
-# Créer le paquet .deb
+# Créer le paquet .deb dans le répertoire courant
 echo "Building the .deb package..."
 dpkg-deb --build "$PROJECT_DIR" || { echo "Deb creation failed!"; exit 1; }
 
-# Déplacer le fichier .deb créé dans un répertoire approprié
+# Déplacer le fichier .deb créé dans le répertoire courant avec un nom basé sur la version
 DEB_FILE="$PROJECT_DIR/portmap_${PACKAGE_VERSION}_all.deb"
 mv "$PROJECT_DIR/portmap.deb" "$DEB_FILE"
 
