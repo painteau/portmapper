@@ -127,6 +127,7 @@ function clean_description {
 
     echo "$description"
 }
+
 # Add a new port to the database
 function add_port {
     local port="$1"
@@ -142,9 +143,14 @@ function add_port {
     # Add the new entry to the database with an optional empty description
     echo "$port,$type,$name,$description,$date_added" >> "$DB_FILE"
     log_action "Added port $port with type '$type', name '$name', description '$description', and date '$date_added'"
-    echo "Port $port has been successfully added."
+
+    # Highlight the success message in green
+    highlight "Port $port has been successfully added."
+
     backup_db  # Backup after addition
 }
+
+
 # Modify an existing port entry
 function modify_port {
     local port="$1"
@@ -224,6 +230,7 @@ function reset_db {
 function display_help {
     echo "Usage:"
     echo "  portmap               - List registered ports"
+    echo "  portmap -l, --list    - List registered ports"
     echo "  portmap -n, --next    - Find the next available port"
     echo "  portmap -a, --add <port> <type> <name> [<description>] - Add a new port"
     echo "  portmap -m, --modify <port> <type> <name> <description> - Modify an existing port"
@@ -235,9 +242,6 @@ function display_help {
     echo "  portmap -s, --search <keyword>  - Search ports by name or description"
     echo "  portmap -e, --export <file>     - Export database to JSON file"
 }
-
-
-
 
 # Highlight text for better visibility
 function highlight {
@@ -251,7 +255,7 @@ function main {
     ensure_path_exists "$BACKUP_DIR" directory
 
     # Check if the number of arguments is correct
-    if [ "$#" -eq 0 ]; then
+    if [ "$#" -eq 0 ] || [ "$1" == "-l" ] || [ "$1" == "--list" ]; then
         list_ports
     elif [ "$1" == "-n" ] || [ "$1" == "--next" ]; then
         find_next_free_port
@@ -292,5 +296,6 @@ function main {
         exit 1
     fi
 }
+
 
 main "$@"
