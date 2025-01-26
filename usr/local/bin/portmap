@@ -110,9 +110,11 @@ function export_to_json {
 # Delete entry by port or name
 function delete_entry {
     local identifier="$1"
+    
     if [[ "$identifier" =~ ^[0-9]+$ ]]; then
         # Delete by port
         if grep -q "^${identifier}," "$DB_FILE"; then
+            # Delete the port entry and update the database
             grep -v "^${identifier}," "$DB_FILE" > "${DB_FILE}.tmp" && mv "${DB_FILE}.tmp" "$DB_FILE"
             log_action "Deleted entry with port $identifier"
             echo "Entry with port $identifier has been successfully deleted."
@@ -122,6 +124,7 @@ function delete_entry {
     else
         # Delete by name
         if grep -q ",$identifier," "$DB_FILE"; then
+            # Delete the name entry and update the database
             grep -v ",$identifier," "$DB_FILE" > "${DB_FILE}.tmp" && mv "${DB_FILE}.tmp" "$DB_FILE"
             log_action "Deleted entry with name $identifier"
             echo "Entry with name $identifier has been successfully deleted."
@@ -130,6 +133,7 @@ function delete_entry {
         fi
     fi
 }
+
 
 # Add a new port to the database
 function add_port {
