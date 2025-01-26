@@ -1,0 +1,234 @@
+#!/bin/bash
+
+DB_FILE="/var/lib/portmap.db"
+START_PORT=4000
+END_PORT=65535
+LOG_FILE="/var/log/portmap.log"
+BACKUP_DIR="/var/lib/portmap_backups"
+
+# Stop the script on any error
+set -e
+
+# Ensure required paths exist
+function ensure_path_exists {
+    local path="$1"
+    local type="$2" # 'file' or 'directory'
+
+    if [ "$type" == "file" ]; then
+        local dir
+        dir=$(dirname "$path")
+        if [ ! -d "$dir" ]; then
+            mkdir -p "$dir" || error "Unable to create directory $dir"
+        fi
+        if [ ! -f "$path" ]; then
+            touch "$path" || error "Unable to create file $path"
+        fi
+    elif [ "$type" == "directory" ]; then
+        if [ ! -d "$path" ]; then
+            mkdir -p "$path" || error "Unable to create directory $path"
+        fi
+    fi
+}
+
+# Function to log actions
+function log_action {
+    local message="$1"
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $message" >> "$LOG_FILE"
+}
+
+# Function to log errors
+function error {
+    echo "Error: $1" >&2
+    log_action "ERROR: $1"
+    exit 1
+}
+
+# Validate user input
+function validate_input {
+    local port="$1"
+    local name="$2"
+    local description="$3"
+
+    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+        error "Port must be an integer between 1 and 65535."
+    fi
+
+    if ! [[ "$name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        error "'name' field must only contain alphanumeric characters, dashes, or underscores."
+    fi
+
+    if ! [[ "$description" =~ ^[a-zA-Z0-9 ,._-]+$ ]]; then
+        error "'description' field contains invalid characters."
+    fi
+}
+
+# List registered ports
+function list_ports {
+    if [ ! -s "$DB_FILE" ]; then
+        echo "No ports registered in the database."
+        exit 0
+    fi
+
+    echo -e "Port\tName\tDescription"
+    echo "------------------------"
+    while IFS=, read -r port name description; do
+        printf "%s\t%s\t%s\n" "$port" "$name" "$description"
+    done < "$DB_FILE"
+}
+
+# Find the next free port in the range 4000-65535
+function find_next_free_port {
+    for port in $(seq "$START_PORT" "$END_PORT"); do
+        if ! grep -q "^${port}," "$DB_FILE"; then
+            echo "$port"
+            return
+        fi
+    done
+    error "No available ports in the range $START_PORT-$END_PORT."
+}
+
+# Search for ports by name or description
+function search_ports {
+    local keyword="$1"
+    if grep -i "$keyword" "$DB_FILE"; then
+        grep -i "$keyword" "$DB_FILE" | while IFS=, read -r port name description; do
+            printf "Port: %s, Name: %s, Description: %s\n" "$port" "$name" "$description"
+        done
+    else
+        echo "No matches found for '$keyword'."
+    fi
+}
+
+# Export database to JSON
+function export_to_json {
+    local output_file="$1"
+    if [[ "$output_file" =~ ^/[^;|&]*$ ]]; then
+        ensure_path_exists "$output_file" file
+    else
+        error "Invalid file path for export."
+    fi
+
+    echo "[" > "$output_file"
+    local first_entry=true
+    while IFS=, read -r port name description; do
+        if [ "$first_entry" = true ]; then
+            first_entry=false
+        else
+            echo "," >> "$output_file"
+        fi
+        echo "  {\"port\": \"$port\", \"name\": \"$name\", \"description\": \"$description\"}" >> "$output_file"
+    done < "$DB_FILE"
+    echo "\n]" >> "$output_file"
+
+    log_action "Exported database to JSON file $output_file"
+    echo "Database exported to $output_file"
+}
+
+# Delete entry by port or name
+function delete_entry {
+    local identifier="$1"
+    if [[ "$identifier" =~ ^[0-9]+$ ]]; then
+        # Delete by port
+        if grep -q "^${identifier}," "$DB_FILE"; then
+            grep -v "^${identifier}," "$DB_FILE" > "${DB_FILE}.tmp" && mv "${DB_FILE}.tmp" "$DB_FILE"
+            log_action "Deleted entry with port $identifier"
+            echo "Entry with port $identifier has been successfully deleted."
+        else
+            error "No entry with port '$identifier' found in the database."
+        fi
+    else
+        # Delete by name
+        if grep -q ",$identifier," "$DB_FILE"; then
+            grep -v ",$identifier," "$DB_FILE" > "${DB_FILE}.tmp" && mv "${DB_FILE}.tmp" "$DB_FILE"
+            log_action "Deleted entry with name $identifier"
+            echo "Entry with name $identifier has been successfully deleted."
+        else
+            error "No entry with name '$identifier' found in the database."
+        fi
+    fi
+}
+
+# Backup the database with unique filenames
+function backup_db {
+    ensure_path_exists "$BACKUP_DIR" directory
+    local timestamp
+    timestamp=$(date +'%Y%m%d%H%M%S')
+    cp "$DB_FILE" "$BACKUP_DIR/portmap_${timestamp}.db" || error "Failed to backup the database."
+    log_action "Database backup created at $BACKUP_DIR/portmap_${timestamp}.db"
+}
+
+# Reset the database
+function reset_db {
+    echo "Are you sure you want to reset the database? This action cannot be undone. (y/n)"
+    read -r confirmation
+    if [[ "$confirmation" =~ ^[yY]$ ]]; then
+        > "$DB_FILE"
+        log_action "Database reset"
+        echo "Database has been reset."
+    else
+        echo "Operation cancelled."
+    fi
+}
+
+# Display help message
+function display_help {
+    echo "Usage:"
+    echo "  portmap               - List registered ports"
+    echo "  portmap -n            - Find the next available port"
+    echo "  portmap <port> <name> <description> - Add a new port"
+    echo "  portmap -d <identifier> - Delete entry by port or name"
+    echo "  portmap -h            - Display this help message"
+    echo "  portmap -b            - Backup the database"
+    echo "  portmap -r            - Reset the database"
+    echo "  portmap -s <keyword>  - Search ports by name or description"
+    echo "  portmap -e <file>     - Export database to JSON file"
+}
+
+# Highlight text for better visibility
+function highlight {
+    echo -e "\033[1;32m$1\033[0m"
+}
+
+# Main function
+function main {
+    ensure_path_exists "$DB_FILE" file
+    ensure_path_exists "$LOG_FILE" file
+    ensure_path_exists "$BACKUP_DIR" directory
+
+    case "$1" in
+        "")
+            list_ports
+            ;;
+        "-n")
+            find_next_free_port
+            ;;
+        "-d")
+            delete_entry "$2"
+            ;;
+        "-h")
+            display_help
+            ;;
+        "-b")
+            backup_db
+            ;;
+        "-r")
+            reset_db
+            ;;
+        "-s")
+            search_ports "$2"
+            ;;
+        "-e")
+            export_to_json "$2"
+            ;;
+        *)
+            if [ "$#" -eq 3 ]; then
+                add_port "$1" "$2" "$3"
+            else
+                display_help
+                exit 1
+            fi
+            ;;
+    esac
+}
+
+main "$@"
