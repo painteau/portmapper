@@ -53,10 +53,10 @@ function list_ports {
     echo -e "Port\tType\tName\tDescription\tDate Added"
     echo "-------------------------------------------------------"
     while IFS=, read -r port type name description date_added; do
-        # Remove the quotes around description if they exist
+        # Remove surrounding quotes from the description if they exist
         description=$(echo "$description" | sed 's/^"\(.*\)"$/\1/')
         
-        # Print the fields, where description may now contain commas
+        # Print the fields, with description correctly displayed
         printf "%s\t%s\t%s\t%s\t%s\n" "$port" "$type" "$name" "$description" "$date_added"
     done < "$DB_FILE"
 }
