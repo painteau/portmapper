@@ -27,13 +27,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential fakeroot dpkg-dev
 
-      # Étape 4 : Construire le paquet Debian
+      # Étape 4 : Générer un changelog minimal si absent
+      - name: Generate minimal changelog
+        run: |
+          mkdir -p debian
+          echo "portmap (${VERSION}) unstable; urgency=low" > debian/changelog
+          echo "" >> debian/changelog
+          echo "  * Auto-generated changelog for version ${VERSION}" >> debian/changelog
+          echo "" >> debian/changelog
+          echo " -- Maintainer <maintainer@example.com>  $(date -R)" >> debian/changelog
+
+      # Étape 5 : Construire le paquet Debian
       - name: Build Debian package
         run: |
           dpkg-buildpackage -b -us -uc
           mv ../*.deb ./portmap_${{ env.VERSION }}.deb
 
-      # Étape 5 : Télécharger le paquet Debian comme artefact
+      # Étape 6 : Télécharger le paquet Debian comme artefact
       - name: Upload .deb package
         uses: actions/upload-artifact@v3
         with:
