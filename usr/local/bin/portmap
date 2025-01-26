@@ -50,10 +50,10 @@ function list_ports {
         exit 0
     fi
 
-    echo -e "Port\tName\tDescription"
-    echo "------------------------"
-    while IFS=, read -r port name description; do
-        printf "%s\t%s\t%s\n" "$port" "$name" "$description"
+    echo -e "Port\tType\tName\tDescription\tDate Added"
+    echo "-------------------------------------------------------"
+    while IFS=, read -r port type name description date_added; do
+        printf "%s\t%s\t%s\t%s\t%s\n" "$port" "$type" "$name" "$description" "$date_added"
     done < "$DB_FILE"
 }
 
@@ -72,8 +72,8 @@ function find_next_free_port {
 function search_ports {
     local keyword="$1"
     if grep -i "$keyword" "$DB_FILE"; then
-        grep -i "$keyword" "$DB_FILE" | while IFS=, read -r port name description; do
-            printf "Port: %s, Name: %s, Description: %s\n" "$port" "$name" "$description"
+        grep -i "$keyword" "$DB_FILE" | while IFS=, read -r port type name description date_added; do
+            printf "Port: %s, Type: %s, Name: %s, Description: %s, Date Added: %s\n" "$port" "$type" "$name" "$description" "$date_added"
         done
     else
         echo "No matches found for '$keyword'."
@@ -93,13 +93,13 @@ function export_to_json {
 
     echo "[" > "$output_file"
     local first_entry=true
-    while IFS=, read -r port name description; do
+    while IFS=, read -r port type name description date_added; do
         if [ "$first_entry" = true ]; then
             first_entry=false
         else
             echo "," >> "$output_file"
         fi
-        echo "  {\"port\": \"$port\", \"name\": \"$name\", \"description\": \"$description\"}" >> "$output_file"
+        echo "  {\"port\": \"$port\", \"type\": \"$type\", \"name\": \"$name\", \"description\": \"$description\", \"date_added\": \"$date_added\"}" >> "$output_file"
     done < "$DB_FILE"
     echo "]" >> "$output_file"
 
@@ -136,6 +136,9 @@ function add_port {
     local port="$1"
     local name="$2"
     local description="$3"
+    local type="$4"
+    local date_added
+    date_added=$(date +'%Y-%m-%d %H:%M:%S')
 
     # Check if the port is already in use
     if grep -q "^${port}," "$DB_FILE"; then
@@ -144,8 +147,8 @@ function add_port {
         if [[ "$answer" =~ ^[yY]$ ]]; then
             local next_port
             next_port=$(find_next_free_port)
-            echo "$next_port,$name,$description" >> "$DB_FILE"
-            log_action "Added port $next_port with name '$name' and description '$description'"
+            echo "$next_port,$type,$name,$description,$date_added" >> "$DB_FILE"
+            log_action "Added port $next_port with type '$type', name '$name', description '$description', and date '$date_added'"
             echo "Port $next_port has been successfully added."
         else
             echo "Operation cancelled."
@@ -154,9 +157,29 @@ function add_port {
     fi
 
     # Add the new entry to the database
-    echo "$port,$name,$description" >> "$DB_FILE"
-    log_action "Added port $port with name '$name' and description '$description'"
+    echo "$port,$type,$name,$description,$date_added" >> "$DB_FILE"
+    log_action "Added port $port with type '$type', name '$name', description '$description', and date '$date_added'"
     echo "Port $port has been successfully added."
+}
+
+# Modify an existing port entry
+function modify_port {
+    local port="$1"
+    local name="$2"
+    local description="$3"
+    local type="$4"
+
+    if ! grep -q "^${port}," "$DB_FILE"; then
+        error "Port $port does not exist in the database."
+    fi
+
+    # Modify the entry
+    grep -v "^${port}," "$DB_FILE" > "${DB_FILE}.tmp"
+    echo "$port,$type,$name,$description,$(date +'%Y-%m-%d %H:%M:%S')" >> "${DB_FILE}.tmp"
+    mv "${DB_FILE}.tmp" "$DB_FILE"
+
+    log_action "Modified port $port with type '$type', name '$name', and description '$description'"
+    echo "Port $port has been successfully modified."
 }
 
 # Backup the database with unique filenames
@@ -186,9 +209,10 @@ function display_help {
     echo "Usage:"
     echo "  portmap               - List registered ports"
     echo "  portmap -n            - Find the next available port"
-    echo "  portmap <port> <name> <description> - Add a new port"
+    echo "  portmap <port> <name> <description> <type> - Add a new port"
+    echo "  portmap -m <port> <name> <description> <type> - Modify an existing port"
     echo "  portmap -d <identifier> - Delete entry by port or name"
-    echo "  portmap -h            - Display this help message"
+    echo "  portmap -h, --help    - Display this help message"
     echo "  portmap -b            - Backup the database"
     echo "  portmap -r            - Reset the database"
     echo "  portmap -s <keyword>  - Search ports by name or description"
@@ -219,7 +243,7 @@ function main {
             fi
             delete_entry "$2"
             ;;
-        "-h")
+        "-h"|"--help")
             display_help
             exit 0
             ;;
@@ -241,9 +265,15 @@ function main {
             fi
             export_to_json "$2"
             ;;
+        "-m")
+            if [ "$#" -ne 5 ]; then
+                error "Usage: portmap -m <port> <name> <description> <type>"
+            fi
+            modify_port "$2" "$3" "$4" "$5"
+            ;;
         *)
-            if [ "$#" -eq 3 ]; then
-                add_port "$1" "$2" "$3"
+            if [ "$#" -eq 4 ]; then
+                add_port "$1" "$2" "$3" "$4"
             else
                 display_help
                 exit 1
