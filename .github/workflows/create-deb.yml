@@ -12,7 +12,7 @@ jobs:
     steps:
       # Récupérer le code du dépôt
       - name: Checkout repository
-        uses: actions/checkout@v3  # Dernière version stable
+        uses: actions/checkout@v3  # Utiliser la dernière version stable
 
       # Activer les dépôts source pour apt
       - name: Enable source repositories
@@ -25,20 +25,27 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential fakeroot dpkg-dev
-          # Assurez-vous que vous êtes dans le bon répertoire pour utiliser le fichier "control"
+          # Vérifier que le fichier "control" est dans le bon répertoire
           cd DEBIAN
           sudo apt-get build-dep .
 
       # Construire le paquet Debian
       - name: Build Debian package
-        uses: jtdor/build-deb-action@v1  # Version stable actuelle de l'action
+        uses: jtdor/build-deb-action@v1  # Utiliser une action existante pour construire le paquet
 
       # Télécharger le paquet .deb en tant qu'artefact
       - name: Upload .deb package as an artifact
-        uses: actions/upload-artifact@v3  # Utilisation de la version 3 pour actions/upload-artifact
+        uses: actions/upload-artifact@v3  # Utiliser la dernière version stable de l'action
         with:
           name: portmap-deb
           path: portmap_${{ env.VERSION }}_all.deb
 
       # Publier le paquet .deb sur GitHub Packages
-      - name: Publish De
+      - name: Publish Debian package to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+          -H "Content-Type: application/octet-stream" \
+          --data-binary @portmap_${{ env.VERSION }}_all.deb \
+          "https://uploads.github.com/repos/${{ github.repository }}/packages/deb/portmap_${{ github.sha }}.deb"
