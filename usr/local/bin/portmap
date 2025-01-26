@@ -83,7 +83,7 @@ function search_ports {
             printf "Port: %s, Type: %s, Name: %s, Description: %s, Date Added: %s\n" "$port" "$type" "$name" "$description" "$date_added"
         done
     else
-        echo "No matches found for '$keyword'."
+        highlight "No matches found for $keyword."
     fi
 }
 
@@ -115,7 +115,7 @@ function export_to_json {
     echo "]" >> "$output_file"
 
     log_action "Exported database to JSON file $output_file"
-    echo "Database exported to $output_file"
+    highlight "Database exported to $output_file"
 }
 
 # Function to clean the description by removing problematic characters
@@ -169,7 +169,7 @@ function modify_port {
     sed -i "s/^${port},.*/${port},${type},${name},${description},$(date +'%Y-%m-%d %H:%M:%S')/" "$DB_FILE"
 
     log_action "Modified port $port with type '$type', name '$name', description '$description'"
-    echo "Port $port has been successfully modified."
+    highlight "Port $port has been successfully modified."
     backup_db  # Backup after modification
 }
 
@@ -183,7 +183,7 @@ function delete_entry {
             # Remove the entry with the specific port directly from the file
             sed -i "/^${identifier},/d" "$DB_FILE"
             log_action "Deleted entry with port $identifier"
-            echo "Entry with port $identifier has been successfully deleted."
+            highlight "Entry with port $identifier has been successfully deleted."
             backup_db  # Backup after deletion
         else
             error "No entry with port '$identifier' found in the database."
@@ -194,7 +194,7 @@ function delete_entry {
             # Remove the entry with the specific name directly from the file
             sed -i "/,$identifier,/d" "$DB_FILE"
             log_action "Deleted entry with name $identifier"
-            echo "Entry with name $identifier has been successfully deleted."
+            highlight "Entry with name $identifier has been successfully deleted."
             backup_db  # Backup after deletion
         else
             error "No entry with name '$identifier' found in the database."
@@ -220,7 +220,7 @@ function reset_db {
     if [[ "$confirmation" =~ ^[yY]$ ]]; then
         > "$DB_FILE"
         log_action "Database reset"
-        echo "Database has been reset."
+        highlight "Database has been reset."
     else
         echo "Operation cancelled."
     fi
