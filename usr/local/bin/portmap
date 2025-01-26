@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DB_FILE="/var/lib/portmap.db"
-START_PORT=4000
+START_PORT=3000
 END_PORT=65535
 LOG_FILE="/var/log/portmap.log"
 BACKUP_DIR="/var/lib/portmap_backups"
@@ -43,28 +43,36 @@ function error {
     exit 1
 }
 
-# List registered ports
+# List registered ports with improved formatting
 function list_ports {
     if [ ! -s "$DB_FILE" ]; then
         echo "No ports registered in the database."
         exit 0
     fi
 
-    echo -e "Port\tType\tName\tDescription\tDate Added"
-    echo "-------------------------------------------------------"
+    # Print the table header with better alignment
+    echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
+    echo -e "|  Port   |   Type     |       Name        |      Description       |     Date Added      |"
+    echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
+
+    # Loop through the entries and format the output
     while IFS=, read -r port type name description date_added; do
         # Remove surrounding quotes from the description if they exist
         description=$(echo "$description" | sed 's/^"\(.*\)"$/\1/')
-        
-        # Print the fields, with description correctly displayed
-        printf "%s\t%s\t%s\t%s\t%s\n" "$port" "$type" "$name" "$description" "$date_added"
+
+        # Format the output to align the columns properly
+        printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" "$port" "$type" "$name" "$description" "$date_added"
     done < "$DB_FILE"
+
+    # Print the table footer
+    echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
 }
 
 
 
 
-# Find the next free port in the range 4000-65535
+
+# Find the next free port in the range 3000-65535
 function find_next_free_port {
     for port in $(seq "$START_PORT" "$END_PORT"); do
         if ! grep -q "^${port}," "$DB_FILE"; then
