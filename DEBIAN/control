@@ -17,7 +17,6 @@ Description: Portmap - A powerful tool for managing port assignments
   - Enhanced port deletion and modification with `-d`, `-r`, `--remove`.
   - Listing ports with `portmap` or `portmap -l` or `portmap --list`.
   - Clean descriptions to remove problematic characters before insertion.
-
  Portmap is ideal for managing ports in complex environments,
  such as Docker-based workflows or networked applications.
  Examples include adding a port with metadata, exporting the database
