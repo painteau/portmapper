@@ -43,25 +43,6 @@ function error {
     exit 1
 }
 
-# Validate user input
-function validate_input {
-    local port="$1"
-    local name="$2"
-    local description="$3"
-
-    if ! [[ "$port" =~ ^[0-9]+$ ]] || [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
-        error "Port must be an integer between 1 and 65535."
-    fi
-
-    if ! [[ "$name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-        error "'name' field must only contain alphanumeric characters, dashes, or underscores."
-    fi
-
-    if ! [[ "$description" =~ ^[a-zA-Z0-9 ,._-]+$ ]]; then
-        error "'description' field contains invalid characters."
-    fi
-}
-
 # List registered ports
 function list_ports {
     if [ ! -s "$DB_FILE" ]; then
@@ -232,7 +213,6 @@ function main {
             ;;
         *)
             if [ "$#" -eq 3 ]; then
-                validate_input "$1" "$2" "$3"
                 add_port "$1" "$2" "$3"
             else
                 display_help
