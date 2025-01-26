@@ -203,10 +203,14 @@ function main {
             find_next_free_port
             ;;
         "-d")
+            if [ -z "$2" ]; then
+                error "Please provide a port or name to delete."
+            fi
             delete_entry "$2"
             ;;
         "-h")
             display_help
+            exit 0
             ;;
         "-b")
             backup_db
@@ -215,13 +219,20 @@ function main {
             reset_db
             ;;
         "-s")
+            if [ -z "$2" ]; then
+                error "Please provide a keyword to search for."
+            fi
             search_ports "$2"
             ;;
         "-e")
+            if [ -z "$2" ]; then
+                error "Please provide a file path for export."
+            fi
             export_to_json "$2"
             ;;
         *)
             if [ "$#" -eq 3 ]; then
+                validate_input "$1" "$2" "$3"
                 add_port "$1" "$2" "$3"
             else
                 display_help
