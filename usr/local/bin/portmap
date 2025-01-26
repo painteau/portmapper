@@ -236,56 +236,50 @@ function main {
     ensure_path_exists "$LOG_FILE" file
     ensure_path_exists "$BACKUP_DIR" directory
 
-    case "$1" in
-        "")
-            list_ports
-            ;;
-        "-n")
-            find_next_free_port
-            ;;
-        "-d")
-            if [ -z "$2" ]; then
-                error "Please provide a port or name to delete."
-            fi
-            delete_entry "$2"
-            ;;
-        "-h"|"--help")
+    # Check if the number of arguments is correct
+    if [ "$#" -eq 0 ]; then
+        list_ports
+    elif [ "$1" == "-n" ]; then
+        find_next_free_port
+    elif [ "$1" == "-d" ]; then
+        if [ -z "$2" ]; then
+            error "Please provide a port or name to delete."
+        fi
+        delete_entry "$2"
+    elif [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+        display_help
+        exit 0
+    elif [ "$1" == "-b" ]; then
+        backup_db
+    elif [ "$1" == "-r" ]; then
+        reset_db
+    elif [ "$1" == "-s" ]; then
+        if [ -z "$2" ]; then
+            error "Please provide a keyword to search for."
+        fi
+        search_ports "$2"
+    elif [ "$1" == "-e" ]; then
+        if [ -z "$2" ]; then
+            error "Please provide a file path for export."
+        fi
+        export_to_json "$2"
+    elif [ "$1" == "-m" ]; then
+        if [ "$#" -ne 5 ]; then
+            error "Usage: portmap -m <port> <type> <name> <description>"
+        fi
+        modify_port "$2" "$3" "$4" "$5"
+    else
+        # Check if the correct number of arguments for adding a port
+        if [ "$#" -eq 4 ]; then
+            add_port "$1" "$2" "$3" ""  # If no description is provided, use an empty string
+        elif [ "$#" -eq 5 ]; then
+            add_port "$1" "$2" "$3" "$4"  # If description is provided, use it
+        else
             display_help
-            exit 0
-            ;;
-        "-b")
-            backup_db
-            ;;
-        "-r")
-            reset_db
-            ;;
-        "-s")
-            if [ -z "$2" ]; then
-                error "Please provide a keyword to search for."
-            fi
-            search_ports "$2"
-            ;;
-        "-e")
-            if [ -z "$2" ]; then
-                error "Please provide a file path for export."
-            fi
-            export_to_json "$2"
-            ;;
-        "-m")
-            if [ "$#" -ne 5 ]; then
-                error "Usage: portmap -m <port> <name> <description> <type>"
-            fi
-            modify_port "$2" "$3" "$4" "$5"
-            ;;
-        *)
-            if [ "$#" -eq 4 ]; then
-                add_port "$1" "$2" "$3" "$4"
-            else
-                display_help
-                exit 1
-            fi
-            ;;
-    esac
+            exit 1
+        fi
+    fi
 }
+
 
 main "$@"
