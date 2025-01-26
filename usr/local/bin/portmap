@@ -137,6 +137,11 @@ function add_port {
     local date_added
     date_added=$(date +'%Y-%m-%d %H:%M:%S')
 
+    # Check if the port already exists in the database
+    if grep -q "^${port}," "$DB_FILE"; then
+        error "Port $port already exists in the database."
+    fi
+
     # Clean the description using the clean_description function
     description=$(clean_description "$description")
 
@@ -149,6 +154,7 @@ function add_port {
 
     backup_db  # Backup after addition
 }
+
 
 
 # Modify an existing port entry
