@@ -131,6 +131,23 @@ function delete_entry {
     fi
 }
 
+# Add a new port to the database
+function add_port {
+    local port="$1"
+    local name="$2"
+    local description="$3"
+
+    # Check if the port is already in use
+    if grep -q "^${port}," "$DB_FILE"; then
+        error "Port $port is already in use."
+    fi
+
+    # Add the new entry to the database
+    echo "$port,$name,$description" >> "$DB_FILE"
+    log_action "Added port $port with name '$name' and description '$description'"
+    echo "Port $port has been successfully added."
+}
+
 # Backup the database with unique filenames
 function backup_db {
     ensure_path_exists "$BACKUP_DIR" directory
