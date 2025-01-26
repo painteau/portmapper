@@ -1,4 +1,4 @@
-name: Create Debian Package
+name: Build Debian Package
 
 on:
   push:
@@ -14,38 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Étape 2 : Extraire la version depuis le fichier DEBIAN/control
-      - name: Extract version from DEBIAN/control
-        id: get_version
-        run: |
-          VERSION=$(grep -m 1 '^Version:' DEBIAN/control | cut -d ' ' -f 2)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      # Étape 3 : Installer les outils nécessaires pour la construction
-      - name: Install build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential fakeroot dpkg-dev
-
-      # Étape 4 : Générer un changelog minimal si absent
-      - name: Generate minimal changelog
-        run: |
-          mkdir -p debian
-          echo "portmap (${VERSION}) unstable; urgency=low" > debian/changelog
-          echo "" >> debian/changelog
-          echo "  * Auto-generated changelog for version ${VERSION}" >> debian/changelog
-          echo "" >> debian/changelog
-          echo " -- Maintainer <maintainer@example.com>  $(date -R)" >> debian/changelog
-
-      # Étape 5 : Construire le paquet Debian
-      - name: Build Debian package
-        run: |
-          dpkg-buildpackage -b -us -uc
-          mv ../*.deb ./portmap_${{ env.VERSION }}.deb
-
-      # Étape 6 : Télécharger le paquet Debian comme artefact
-      - name: Upload .deb package
-        uses: actions/upload-artifact@v3
+      # Étape 2 : Construire le paquet Debian avec l'action dédiée
+      - name: Build Debian package on multiple architectures
+        uses: docker://ghcr.io/alexjurkiewicz/build-debian-package:v1
         with:
-          name: portmap-deb
-          path: ./portmap_${{ env.VERSION }}.deb
+          architectures: "amd64 arm64"
+        env:
+          DEBFULLNAME: "Painteau"
+          DEBEMAIL: "dev@gochu.fr"
