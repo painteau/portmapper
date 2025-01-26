@@ -43,7 +43,7 @@ function error {
     exit 1
 }
 
-# List registered ports with improved formatting
+# List registered ports with improved formatting, handling long descriptions
 function list_ports {
     if [ ! -s "$DB_FILE" ]; then
         echo "No ports registered in the database."
@@ -60,16 +60,23 @@ function list_ports {
         # Remove surrounding quotes from the description if they exist
         description=$(echo "$description" | sed 's/^"\(.*\)"$/\1/')
 
-        # Format the output to align the columns properly
-        printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" "$port" "$type" "$name" "$description" "$date_added"
+        # Wrap the description text at a specified column width (e.g., 30 characters)
+        wrapped_description=$(echo "$description" | fold -s -w 30)
+
+        # Print each line of the wrapped description
+        # Handle the case where the description spans multiple lines
+        while IFS= read -r desc_line; do
+            if [ -z "$desc_line" ]; then
+                desc_line=" "  # To ensure there is always text in the description column
+            fi
+            # Print formatted data with each line of description
+            printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" "$port" "$type" "$name" "$desc_line" "$date_added"
+        done <<< "$wrapped_description"
     done < "$DB_FILE"
 
     # Print the table footer
     echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
 }
-
-
-
 
 
 # Find the next free port in the range 3000-65535
