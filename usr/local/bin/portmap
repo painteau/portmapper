@@ -139,7 +139,16 @@ function add_port {
 
     # Check if the port already exists in the database
     if grep -q "^${port}," "$DB_FILE"; then
-        error "Port $port already exists in the database."
+        echo "Port $port already exists in the database."
+        echo "Do you want to use the next available port? (y/n)"
+        read -r user_response
+        if [[ "$user_response" =~ ^[yY]$ ]]; then
+            # Find the next available port
+            port=$(find_next_free_port)
+            echo "Using port $port instead."
+        else
+            error "Port $port already exists. Operation cancelled."
+        fi
     fi
 
     # Clean the description using the clean_description function
