@@ -276,16 +276,16 @@ function main {
         fi
         export_to_json "$2"
     elif [ "$1" == "-m" ]; then
-        if [ "$#" -ne 5 ]; then
+        if [ "$#" -ne 4 ]; then
             error "Usage: portmap -m <port> <type> <name> <description>"
         fi
         modify_port "$2" "$3" "$4" "$5"
     else
         # Ensure that there are 4 or 5 arguments for adding a port
-        if [ "$#" -eq 4 ]; then
+        if [ "$#" -eq 3 ]; then
             # If no description is provided, use an empty string
             add_port "$1" "$2" "$3" ""
-        elif [ "$#" -eq 5 ]; then
+        elif [ "$#" -eq 4 ]; then
             add_port "$1" "$2" "$3" "$4"
         else
             display_help
