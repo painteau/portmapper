@@ -18,14 +18,14 @@ function ensure_path_exists {
         local dir
         dir=$(dirname "$path")
         if [ ! -d "$dir" ]; then
-            mkdir -p "$dir" || error "Unable to create directory $dir"
+            mkdir -p "$dir"
         fi
         if [ ! -f "$path" ]; then
-            touch "$path" || error "Unable to create file $path"
+            touch "$path"
         fi
     elif [ "$type" == "directory" ]; then
         if [ ! -d "$path" ]; then
-            mkdir -p "$path" || error "Unable to create directory $path"
+            mkdir -p "$path"
         fi
     fi
 }
@@ -83,11 +83,12 @@ function search_ports {
 # Export database to JSON
 function export_to_json {
     local output_file="$1"
-    if [[ "$output_file" =~ ^/[^;|&]*$ ]]; then
-        ensure_path_exists "$output_file" file
-    else
+
+    if [[ -z "$output_file" || "$output_file" == *[';'|'&'|'|']* ]]; then
         error "Invalid file path for export."
     fi
+
+    ensure_path_exists "$output_file" file
 
     echo "[" > "$output_file"
     local first_entry=true
@@ -99,7 +100,7 @@ function export_to_json {
         fi
         echo "  {\"port\": \"$port\", \"name\": \"$name\", \"description\": \"$description\"}" >> "$output_file"
     done < "$DB_FILE"
-    echo "\n]" >> "$output_file"
+    echo "]" >> "$output_file"
 
     log_action "Exported database to JSON file $output_file"
     echo "Database exported to $output_file"
@@ -134,7 +135,7 @@ function backup_db {
     ensure_path_exists "$BACKUP_DIR" directory
     local timestamp
     timestamp=$(date +'%Y%m%d%H%M%S')
-    cp "$DB_FILE" "$BACKUP_DIR/portmap_${timestamp}.db" || error "Failed to backup the database."
+    cp "$DB_FILE" "$BACKUP_DIR/portmap_${timestamp}.db"
     log_action "Database backup created at $BACKUP_DIR/portmap_${timestamp}.db"
 }
 
