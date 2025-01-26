@@ -7,24 +7,27 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Utilise une machine virtuelle Ubuntu
+    runs-on: ubuntu-latest  # Utilisation d'une machine virtuelle Ubuntu
 
     steps:
       # Récupérer le code du dépôt
       - name: Checkout repository
         uses: actions/checkout@v3  # Dernière version stable
 
+      # Activer les dépôts source pour apt
+      - name: Enable source repositories
+        run: |
+          sudo sed -i 's/^# deb-src/deb-src/' /etc/apt/sources.list
+          sudo apt-get update
+
       # Installer les dépendances de construction
       - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential fakeroot dpkg-dev
-
-          # Assurez-vous que vous êtes dans le bon répertoire
-          cd DEBIAN  # Assurez-vous que le répertoire contenant 'control' est le bon
-
-          # Installer les dépendances de construction basées sur le fichier 'control'
-          sudo apt-get build-dep debian/control
+          # Assurez-vous que vous êtes dans le bon répertoire pour utiliser le fichier "control"
+          cd DEBIAN
+          sudo apt-get build-dep .
 
       # Construire le paquet Debian
       - name: Build Debian package
@@ -35,4 +38,7 @@ jobs:
         uses: actions/upload-artifact@v3  # Utilisation de la version 3 pour actions/upload-artifact
         with:
           name: portmap-deb
-          path: portmap_${{ env.VERSION }}_all
+          path: portmap_${{ env.VERSION }}_all.deb
+
+      # Publier le paquet .deb sur GitHub Packages
+      - name: Publish De
