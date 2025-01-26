@@ -8,7 +8,6 @@ Description: Portmap - A powerful tool for managing port assignments
  Portmap is a lightweight command-line utility designed to simplify
  port management for developers and administrators. It allows users
  to add, delete, search, and export port assignments with ease.
-
  Key features:
   - JSON export for seamless integration with other tools.
   - Automatic backups to ensure data safety.
