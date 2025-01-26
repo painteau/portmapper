@@ -52,7 +52,7 @@ function list_ports {
 
     # Print the table header with better alignment
     echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
-    echo -e "|  Port   |   Type     |       Name        |      Description       |     Date Added      |"
+    echo -e "|  Port   |   Type     |       Name        |      Description      |     Date Added      |"
     echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
 
     # Loop through the entries and format the output
