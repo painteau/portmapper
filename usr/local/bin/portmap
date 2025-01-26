@@ -134,9 +134,9 @@ function delete_entry {
 # Add a new port to the database
 function add_port {
     local port="$1"
-    local name="$2"
-    local description="$3"
-    local type="$4"
+    local type="$2"
+    local name="$3"
+    local description="$4"
     local date_added
     date_added=$(date +'%Y-%m-%d %H:%M:%S')
 
@@ -156,7 +156,7 @@ function add_port {
         return
     fi
 
-    # Add the new entry to the database
+    # Add the new entry to the database in the correct format
     echo "$port,$type,$name,$description,$date_added" >> "$DB_FILE"
     log_action "Added port $port with type '$type', name '$name', description '$description', and date '$date_added'"
     echo "Port $port has been successfully added."
