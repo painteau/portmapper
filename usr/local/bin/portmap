@@ -84,7 +84,8 @@ function search_ports {
 function export_to_json {
     local output_file="$1"
 
-    if [[ -z "$output_file" || "$output_file" == *[';'|'&'|'|']* ]]; then
+    # Validate file path for invalid characters
+    if [[ -z "$output_file" || "$output_file" == *[';|&']* ]]; then
         error "Invalid file path for export."
     fi
 
