@@ -1,5 +1,5 @@
 Package: portmap
-Version: 1.0.0
+Version: 1.0.1
 Section: utils
 Priority: optional
 Architecture: all
@@ -14,6 +14,10 @@ Description: Portmap - A powerful tool for managing port assignments
   - Automatic backups to ensure data safety.
   - Validation of input to avoid conflicts or errors.
   - Search functionality to quickly find port information.
+  - Reset the database with the `--reset` command.
+  - Enhanced port deletion and modification with `-d`, `-r`, `--remove`.
+  - Listing ports with `portmap` or `portmap -l` or `portmap --list`.
+  - Clean descriptions to remove problematic characters before insertion.
 
  Portmap is ideal for managing ports in complex environments,
  such as Docker-based workflows or networked applications.
