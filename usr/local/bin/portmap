@@ -276,7 +276,7 @@ function main {
         fi
         export_to_json "$2"
     elif [ "$1" == "-m" ]; then
-        if [ "$#" -ne 4 ]; then
+        if [ "$#" -ne 5 ]; then
             error "Usage: portmap -m <port> <type> <name> <description>"
         fi
         modify_port "$2" "$3" "$4" "$5"
