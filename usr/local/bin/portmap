@@ -61,7 +61,7 @@ function list_ports {
         description=$(echo "$description" | sed 's/^"\(.*\)"$/\1/')
 
         # Wrap the description text at a specified column width (e.g., 30 characters)
-        wrapped_description=$(echo "$description" | fold -s -w 30)
+        wrapped_description=$(echo "$description" | fold -s -w 22)
 
         # Print each line of the wrapped description
         # Handle the case where the description spans multiple lines
@@ -77,6 +77,7 @@ function list_ports {
     # Print the table footer
     echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
 }
+
 
 
 # Find the next free port in the range 3000-65535
