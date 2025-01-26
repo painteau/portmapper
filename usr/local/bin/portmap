@@ -116,7 +116,6 @@ function export_to_json {
     echo "Database exported to $output_file"
 }
 
-
 # Add a new port to the database
 function add_port {
     local port="$1"
@@ -147,6 +146,7 @@ function add_port {
     log_action "Added port $port with type '$type', name '$name', description '$description', and date '$date_added'"
     echo "Port $port has been successfully added."
 }
+
 
 
 
