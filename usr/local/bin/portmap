@@ -127,10 +127,10 @@ function add_port {
     local date_added
     date_added=$(date +'%Y-%m-%d %H:%M:%S')
 
-    # Escape any double quotes in the description
-    description=$(echo "$description" | sed 's/"/\\"/g')
+    # Escape any commas and double quotes in the description
+    description=$(echo "$description" | sed 's/"/\\"/g' | sed 's/,/\\,/g')
 
-    # Encapsulate the description in quotes to handle commas and special characters
+    # Enclose the description in double quotes to preserve the structure
     description="\"$description\""
 
     # Check if the port is already in use
@@ -155,6 +155,31 @@ function add_port {
     log_action "Added port $port with type '$type', name '$name', description '$description', and date '$date_added'"
     echo "Port $port has been successfully added."
     backup_db  # Backup after addition
+}
+
+# Modify an existing port entry
+function modify_port {
+    local port="$1"
+    local type="$2"
+    local name="$3"
+    local description="${4:-}"  # If no description is provided, set it as an empty string
+
+    # Escape any commas and double quotes in the description
+    description=$(echo "$description" | sed 's/"/\\"/g' | sed 's/,/\\,/g')
+
+    # Enclose the description in double quotes to preserve the structure
+    description="\"$description\""
+
+    if ! grep -q "^${port}," "$DB_FILE"; then
+        error "Port $port does not exist in the database."
+    fi
+
+    # Modify the entry using sed to replace the entire line corresponding to the port
+    sed -i "s/^${port},.*/${port},${type},${name},${description},$(date +'%Y-%m-%d %H:%M:%S')/" "$DB_FILE"
+
+    log_action "Modified port $port with type '$type', name '$name', description '$description'"
+    echo "Port $port has been successfully modified."
+    backup_db  # Backup after modification
 }
 
 
@@ -186,31 +211,6 @@ function delete_entry {
         fi
     fi
 }
-# Modify an existing port entry
-function modify_port {
-    local port="$1"
-    local type="$2"
-    local name="$3"
-    local description="${4:-}"  # If no description is provided, set it as an empty string
-
-    # Escape any double quotes in the description
-    description=$(echo "$description" | sed 's/"/\\"/g')
-
-    # Encapsulate the description in quotes to handle commas and special characters
-    description="\"$description\""
-
-    if ! grep -q "^${port}," "$DB_FILE"; then
-        error "Port $port does not exist in the database."
-    fi
-
-    # Modify the entry using sed to replace the entire line corresponding to the port
-    sed -i "s/^${port},.*/${port},${type},${name},${description},$(date +'%Y-%m-%d %H:%M:%S')/" "$DB_FILE"
-
-    log_action "Modified port $port with type '$type', name '$name', description '$description'"
-    echo "Port $port has been successfully modified."
-    backup_db  # Backup after modification
-}
-
 
 
 
