@@ -162,6 +162,7 @@ function add_port {
     echo "Port $port has been successfully added."
 }
 
+
 # Modify an existing port entry
 function modify_port {
     local port="$1"
@@ -209,8 +210,8 @@ function display_help {
     echo "Usage:"
     echo "  portmap               - List registered ports"
     echo "  portmap -n            - Find the next available port"
-    echo "  portmap <port> <name> <description> <type> - Add a new port"
-    echo "  portmap -m <port> <name> <description> <type> - Modify an existing port"
+    echo "  portmap <port> <type> <name> <description> - Add a new port"
+    echo "  portmap -m <port> <type> <name> <description> - Modify an existing port"
     echo "  portmap -d <identifier> - Delete entry by port or name"
     echo "  portmap -h, --help    - Display this help message"
     echo "  portmap -b            - Backup the database"
@@ -218,6 +219,7 @@ function display_help {
     echo "  portmap -s <keyword>  - Search ports by name or description"
     echo "  portmap -e <file>     - Export database to JSON file"
 }
+
 
 # Highlight text for better visibility
 function highlight {
