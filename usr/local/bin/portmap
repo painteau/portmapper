@@ -139,6 +139,7 @@ function add_port {
 }
 
 
+
 # Delete entry by port or name
 function delete_entry {
     local identifier="$1"
@@ -214,7 +215,7 @@ function display_help {
     echo "Usage:"
     echo "  portmap               - List registered ports"
     echo "  portmap -n            - Find the next available port"
-    echo "  portmap <port> <type> <name> <description> - Add a new port"
+    echo "  portmap <port> <type> <name> [<description>] - Add a new port"
     echo "  portmap -m <port> <type> <name> <description> - Modify an existing port"
     echo "  portmap -d <identifier> - Delete entry by port or name"
     echo "  portmap -h, --help    - Display this help message"
@@ -223,6 +224,7 @@ function display_help {
     echo "  portmap -s <keyword>  - Search ports by name or description"
     echo "  portmap -e <file>     - Export database to JSON file"
 }
+
 
 
 # Highlight text for better visibility
@@ -281,6 +283,7 @@ function main {
         fi
     fi
 }
+
 
 
 main "$@"
