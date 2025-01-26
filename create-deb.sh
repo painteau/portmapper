@@ -41,6 +41,9 @@ git add .
 # Commit avec un message contenant la version extraite
 git commit -m "Release $PACKAGE_VERSION - Create .deb package"
 
+# Changer l'URL du dépôt pour utiliser SSH (si ce n'est pas déjà fait)
+git remote set-url origin git@github.com:painteau/portmap.git
+
 # Pousser les modifications vers le dépôt
 git push origin main
 
