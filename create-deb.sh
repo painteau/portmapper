@@ -25,8 +25,14 @@ echo "Extracted package version: $PACKAGE_VERSION"
 echo "Building the .deb package..."
 dpkg-deb --build "$PROJECT_DIR" || { echo "Deb creation failed!"; exit 1; }
 
-# Déplacer le fichier .deb créé dans le répertoire courant avec un nom basé sur la version
+# Vérifier si le fichier .deb existe dans le répertoire courant
 DEB_FILE="$PROJECT_DIR/portmap_${PACKAGE_VERSION}_all.deb"
+if [ ! -f "$PROJECT_DIR/portmap.deb" ]; then
+    echo "Debian package was not created in the expected location."
+    exit 1
+fi
+
+# Déplacer le fichier .deb créé dans le répertoire courant avec un nom basé sur la version
 mv "$PROJECT_DIR/portmap.deb" "$DEB_FILE"
 
 # Confirmer la création du paquet
