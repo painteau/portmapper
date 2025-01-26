@@ -63,6 +63,7 @@ function list_ports {
 
 
 
+
 # Find the next free port in the range 4000-65535
 function find_next_free_port {
     for port in $(seq "$START_PORT" "$END_PORT"); do
