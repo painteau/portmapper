@@ -77,7 +77,7 @@ function list_ports {
                 printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" "$port" "$type" "$name" "$desc_line" "$date_added"
                 first_line=false  # Set the flag to false after printing the first line
             else
-                printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" " " " " " " "$desc_line" "$date_added"
+                printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" " " " " " " "$desc_line" " "
             fi
         done <<< "$wrapped_description"
     done < "$DB_FILE"
