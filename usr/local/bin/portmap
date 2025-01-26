@@ -278,12 +278,18 @@ function main {
         fi
         export_to_json "$2"
     elif [ "$1" == "-m" ]; then
-        if [ "$#" -ne 5 ]; then
-            error "Usage: portmap -m <port> <type> <name> <description>"
+        # Ensure the correct number of arguments for modification
+        if [ "$#" -lt 4 ] || [ "$#" -gt 5 ]; then
+            error "Usage: portmap -m <port> <type> <name> [<description>]"
         fi
-        modify_port "$2" "$3" "$4" "$5"
+        # If the number of arguments is valid, modify the port
+        if [ "$#" -eq 4 ]; then
+            modify_port "$2" "$3" "$4" ""  # Empty description
+        elif [ "$#" -eq 5 ]; then
+            modify_port "$2" "$3" "$4" "$5"  # Provided description
+        fi
     else
-        # Ensure that there are 4 or 5 arguments for adding a port
+        # Ensure that there are 3 or 4 arguments for adding a port
         if [ "$#" -eq 3 ]; then
             # If no description is provided, use an empty string
             add_port "$1" "$2" "$3" ""
@@ -295,6 +301,7 @@ function main {
         fi
     fi
 }
+
 
 
 
