@@ -1,4 +1,4 @@
-name: Build and Publish Debian Package
+name: Build Debian Package
 
 on:
   push:
@@ -7,45 +7,30 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Utilisation d'une machine virtuelle Ubuntu
+    runs-on: ubuntu-latest
 
     steps:
       # Récupérer le code du dépôt
       - name: Checkout repository
-        uses: actions/checkout@v3  # Utiliser la dernière version stable
+        uses: actions/checkout@v3
 
-      # Activer les dépôts source pour apt
-      - name: Enable source repositories
+      # Extraire la version depuis le fichier DEBIAN/control
+      - name: Extract version from control file
+        id: get_version
         run: |
-          sudo sed -i 's/^# deb-src/deb-src/' /etc/apt/sources.list
-          sudo apt-get update
-
-      # Installer les dépendances de construction
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential fakeroot dpkg-dev
-          # Vérifier que le fichier "control" est dans le bon répertoire
-          cd DEBIAN
-          sudo apt-get build-dep .
+          VERSION=$(grep -m 1 '^Version:' DEBIAN/control | cut -d ' ' -f 2)
+          echo "VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       # Construire le paquet Debian
       - name: Build Debian package
-        uses: jtdor/build-deb-action@v1  # Utiliser une action existante pour construire le paquet
-
-      # Télécharger le paquet .deb en tant qu'artefact
-      - name: Upload .deb package as an artifact
-        uses: actions/upload-artifact@v3  # Utiliser la dernière version stable de l'action
+        uses: jtdor/build-deb-action@v1
         with:
-          name: portmap-deb
-          path: portmap_${{ env.VERSION }}_all.deb
+          buildpackage-opts: "--build=binary --no-sign"
 
-      # Publier le paquet .deb sur GitHub Packages
-      - name: Publish Debian package to GitHub Packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary @portmap_${{ env.VERSION }}_all.deb \
-          "https://uploads.github.com/repos/${{ github.repository }}/packages/deb/portmap_${{ github.sha }}.deb"
+      # Télécharger les artefacts Debian générés
+      - name: Upload .deb package as an artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: debian-packages
+          path: "portmap_${{ env.VERSION }}_*.deb"
