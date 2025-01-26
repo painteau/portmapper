@@ -107,6 +107,38 @@ function export_to_json {
     echo "Database exported to $output_file"
 }
 
+# Add a new port to the database
+function add_port {
+    local port="$1"
+    local type="$2"
+    local name="$3"
+    local description="${4:-}"  # If no description is provided, set it as an empty string
+    local date_added
+    date_added=$(date +'%Y-%m-%d %H:%M:%S')
+
+    # Check if the port is already in use
+    if grep -q "^${port}," "$DB_FILE"; then
+        echo "Port $port is already in use. Would you like to use the next available port? (y/n)"
+        read -r answer
+        if [[ "$answer" =~ ^[yY]$ ]]; then
+            local next_port
+            next_port=$(find_next_free_port)
+            echo "$next_port,$type,$name,$description,$date_added" >> "$DB_FILE"
+            log_action "Added port $next_port with type '$type', name '$name', description '$description', and date '$date_added'"
+            echo "Port $next_port has been successfully added."
+        else
+            echo "Operation cancelled."
+        fi
+        return
+    fi
+
+    # Add the new entry to the database with an optional empty description
+    echo "$port,$type,$name,$description,$date_added" >> "$DB_FILE"
+    log_action "Added port $port with type '$type', name '$name', description '$description', and date '$date_added'"
+    echo "Port $port has been successfully added."
+}
+
+
 # Delete entry by port or name
 function delete_entry {
     local identifier="$1"
@@ -132,39 +164,6 @@ function delete_entry {
             error "No entry with name '$identifier' found in the database."
         fi
     fi
-}
-
-
-
-# Add a new port to the database
-function add_port {
-    local port="$1"
-    local type="$2"
-    local name="$3"
-    local description="$4"
-    local date_added
-    date_added=$(date +'%Y-%m-%d %H:%M:%S')
-
-    # Check if the port is already in use
-    if grep -q "^${port}," "$DB_FILE"; then
-        echo "Port $port is already in use. Would you like to use the next available port? (y/n)"
-        read -r answer
-        if [[ "$answer" =~ ^[yY]$ ]]; then
-            local next_port
-            next_port=$(find_next_free_port)
-            echo "$next_port,$type,$name,$description,$date_added" >> "$DB_FILE"
-            log_action "Added port $next_port with type '$type', name '$name', description '$description', and date '$date_added'"
-            echo "Port $next_port has been successfully added."
-        else
-            echo "Operation cancelled."
-        fi
-        return
-    fi
-
-    # Add the new entry to the database in the correct format
-    echo "$port,$type,$name,$description,$date_added" >> "$DB_FILE"
-    log_action "Added port $port with type '$type', name '$name', description '$description', and date '$date_added'"
-    echo "Port $port has been successfully added."
 }
 
 
