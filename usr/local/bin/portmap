@@ -53,9 +53,14 @@ function list_ports {
     echo -e "Port\tType\tName\tDescription\tDate Added"
     echo "-------------------------------------------------------"
     while IFS=, read -r port type name description date_added; do
+        # If description is empty, leave it as an empty string
+        if [ -z "$description" ]; then
+            description=""
+        fi
         printf "%s\t%s\t%s\t%s\t%s\n" "$port" "$type" "$name" "$description" "$date_added"
     done < "$DB_FILE"
 }
+
 
 # Find the next free port in the range 4000-65535
 function find_next_free_port {
@@ -99,13 +104,18 @@ function export_to_json {
         else
             echo "," >> "$output_file"
         fi
-        echo "  {\"port\": \"$port\", \"type\": \"$type\", \"name\": \"$name\", \"description\": \"$description\", \"date_added\": \"$date_added\"}" >> "$output_file"
+        # If description is empty, use null instead of an empty string
+        if [ -z "$description" ]; then
+            description="null"
+        fi
+        echo "  {\"port\": \"$port\", \"type\": \"$type\", \"name\": \"$name\", \"description\": $description, \"date_added\": \"$date_added\"}" >> "$output_file"
     done < "$DB_FILE"
     echo "]" >> "$output_file"
 
     log_action "Exported database to JSON file $output_file"
     echo "Database exported to $output_file"
 }
+
 
 # Add a new port to the database
 function add_port {
@@ -171,22 +181,22 @@ function delete_entry {
 # Modify an existing port entry
 function modify_port {
     local port="$1"
-    local name="$2"
-    local description="$3"
-    local type="$4"
+    local type="$2"
+    local name="$3"
+    local description="${4:-}"  # If no description is provided, set it as an empty string
 
     if ! grep -q "^${port}," "$DB_FILE"; then
         error "Port $port does not exist in the database."
     fi
 
     # Modify the entry
-    grep -v "^${port}," "$DB_FILE" > "${DB_FILE}.tmp"
-    echo "$port,$type,$name,$description,$(date +'%Y-%m-%d %H:%M:%S')" >> "${DB_FILE}.tmp"
-    mv "${DB_FILE}.tmp" "$DB_FILE"
+    # Use sed to replace the entire line corresponding to the port with the updated values
+    sed -i "s/^${port},.*/${port},${type},${name},${description},$(date +'%Y-%m-%d %H:%M:%S')/" "$DB_FILE"
 
-    log_action "Modified port $port with type '$type', name '$name', and description '$description'"
+    log_action "Modified port $port with type '$type', name '$name', description '$description'"
     echo "Port $port has been successfully modified."
 }
+
 
 # Backup the database with unique filenames
 function backup_db {
