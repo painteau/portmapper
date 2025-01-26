@@ -7,19 +7,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Utilisation d'une machine virtuelle Ubuntu
+    runs-on: ubuntu-latest  # Utilise une machine virtuelle Ubuntu
 
     steps:
       # Récupérer le code du dépôt
       - name: Checkout repository
-        uses: actions/checkout@v4  # Dernière version stable
+        uses: actions/checkout@v3  # Dernière version stable
 
-      # Extraire la version du fichier DEBIAN/control
-      - name: Extract version from control file
-        id: get_version
+      # Installer les dépendances de construction
+      - name: Install build dependencies
         run: |
-          VERSION=$(grep -m 1 '^Version:' DEBIAN/control | cut -d ' ' -f 2)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          sudo apt-get update
+          sudo apt-get install -y build-essential fakeroot dpkg-dev
+
+          # Assurez-vous que vous êtes dans le bon répertoire
+          cd DEBIAN  # Assurez-vous que le répertoire contenant 'control' est le bon
+
+          # Installer les dépendances de construction basées sur le fichier 'control'
+          sudo apt-get build-dep debian/control
 
       # Construire le paquet Debian
       - name: Build Debian package
@@ -27,17 +32,7 @@ jobs:
 
       # Télécharger le paquet .deb en tant qu'artefact
       - name: Upload .deb package as an artifact
-        uses: actions/upload-artifact@v4  # Dernière version stable
+        uses: actions/upload-artifact@v3  # Utilisation de la version 3 pour actions/upload-artifact
         with:
           name: portmap-deb
-          path: portmap_${{ env.VERSION }}_all.deb
-
-      # Publier le paquet .deb sur GitHub Packages
-      - name: Publish Debian package to GitHub Packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
-          -H "Content-Type: application/octet-stream" \
-          --data-binary @portmap_${{ env.VERSION }}_all.deb \
-          "https://uploads.github.com/repos/${{ github.repository }}/packages/deb/portmap_${{ github.sha }}.deb"
+          path: portmap_${{ env.VERSION }}_all
