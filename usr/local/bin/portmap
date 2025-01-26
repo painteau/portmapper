@@ -269,11 +269,12 @@ function main {
         fi
         modify_port "$2" "$3" "$4" "$5"
     else
-        # Check if the correct number of arguments for adding a port
+        # Ensure that there are 4 or 5 arguments for adding a port
         if [ "$#" -eq 4 ]; then
-            add_port "$1" "$2" "$3" ""  # If no description is provided, use an empty string
+            # If no description is provided, use an empty string
+            add_port "$1" "$2" "$3" ""
         elif [ "$#" -eq 5 ]; then
-            add_port "$1" "$2" "$3" "$4"  # If description is provided, use it
+            add_port "$1" "$2" "$3" "$4"
         else
             display_help
             exit 1
