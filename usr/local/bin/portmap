@@ -139,7 +139,18 @@ function add_port {
 
     # Check if the port is already in use
     if grep -q "^${port}," "$DB_FILE"; then
-        error "Port $port is already in use."
+        echo "Port $port is already in use. Would you like to use the next available port? (y/n)"
+        read -r answer
+        if [[ "$answer" =~ ^[yY]$ ]]; then
+            local next_port
+            next_port=$(find_next_free_port)
+            echo "$next_port,$name,$description" >> "$DB_FILE"
+            log_action "Added port $next_port with name '$name' and description '$description'"
+            echo "Port $next_port has been successfully added."
+        else
+            echo "Operation cancelled."
+        fi
+        return
     fi
 
     # Add the new entry to the database
