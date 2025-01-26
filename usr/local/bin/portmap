@@ -60,23 +60,32 @@ function list_ports {
         # Remove surrounding quotes from the description if they exist
         description=$(echo "$description" | sed 's/^"\(.*\)"$/\1/')
 
-        # Wrap the description text at a specified column width (e.g., 30 characters)
+        # Wrap the description text at 22 characters per line
         wrapped_description=$(echo "$description" | fold -s -w 22)
 
+        # Flag to track if it's the first line of description
+        first_line=true
+
         # Print each line of the wrapped description
-        # Handle the case where the description spans multiple lines
         while IFS= read -r desc_line; do
             if [ -z "$desc_line" ]; then
                 desc_line=" "  # To ensure there is always text in the description column
             fi
-            # Print formatted data with each line of description
-            printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" "$port" "$type" "$name" "$desc_line" "$date_added"
+
+            # If it's the first line, print port, type, and name; otherwise, just print the description
+            if [ "$first_line" = true ]; then
+                printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" "$port" "$type" "$name" "$desc_line" "$date_added"
+                first_line=false  # Set the flag to false after printing the first line
+            else
+                printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" " " " " " " "$desc_line" "$date_added"
+            fi
         done <<< "$wrapped_description"
     done < "$DB_FILE"
 
     # Print the table footer
     echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
 }
+
 
 
 
