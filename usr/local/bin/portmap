@@ -3,16 +3,33 @@
 # Fichier de configuration
 CONFIG_FILE="/etc/portmap.conf"
 
-# Charger la configuration
-function load_config {
-    if [ -f "$CONFIG_FILE" ]; then
-        source "$CONFIG_FILE"
-    else
-        error "Config file $CONFIG_FILE does not exist."
+# Fonction pour créer le fichier de configuration par défaut
+function create_default_config {
+    local config_file="$1"
+    if [ ! -f "$config_file" ]; then
+        echo "# Portmap configuration file" > "$config_file"
+        echo "DB_FILE=\"/var/lib/portmap.db\"" >> "$config_file"
+        echo "START_PORT=3000" >> "$config_file"
+        echo "END_PORT=65535" >> "$config_file"
+        echo "LOG_FILE=\"/var/log/portmap.log\"" >> "$config_file"
+        echo "BACKUP_DIR=\"/var/lib/portmap_backups\"" >> "$config_file"
+        echo "HISTORY_FILE=\"/var/log/portmap_history.log\"" >> "$config_file"
+        log_action "INFO" "Created default configuration file at $config_file"
     fi
 }
 
-# Variables par défaut (peuvent être écrasées par le fichier de configuration)
+# Fonction pour charger la configuration
+function load_config {
+    local config_file="$1"
+    create_default_config "$config_file"
+    if [ -f "$config_file" ]; then
+        source "$config_file"
+    else
+        error "Config file $config_file does not exist and could not be created."
+    fi
+}
+
+# Variables par défaut (seront écrasées par le fichier de configuration)
 DB_FILE="/var/lib/portmap.db"
 START_PORT=3000
 END_PORT=65535
@@ -22,7 +39,7 @@ HISTORY_FILE="/var/log/portmap_history.log"
 VERSION="1.0.0"
 
 # Charger la configuration
-load_config
+load_config "$CONFIG_FILE"
 
 # Arrêter le script en cas d'erreur
 set -e
@@ -281,6 +298,8 @@ function display_help {
 
 # Fonction principale
 function main {
+    local CONFIG_FILE="/etc/portmap.conf"
+    load_config "$CONFIG_FILE"
     check_dependencies
     ensure_path_exists "$DB_FILE" file
     ensure_path_exists "$LOG_FILE" file
