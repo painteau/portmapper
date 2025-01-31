@@ -26,9 +26,9 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git tag v${VERSION}
-          git push origin v${VERSION}
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git v${VERSION}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Build .deb package
         run: dpkg-deb --build . "portmap_${VERSION}.deb"
@@ -49,4 +49,4 @@ jobs:
           prerelease: false
           files: "portmap_${VERSION}.deb"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
