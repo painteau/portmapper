@@ -2,8 +2,8 @@ name: Build and Release Debian Package
 
 on:
   push:
-    tags:
-      - 'v*.*.*'  # Déclenchement uniquement sur un tag versionné (ex: v1.2.3)
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -21,6 +21,15 @@ jobs:
         id: get_version
         run: echo "VERSION=$(grep '^Version:' Debian/control | cut -d ' ' -f 2)" >> $GITHUB_ENV
 
+      - name: Create Git tag
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git tag v${VERSION}
+          git push origin v${VERSION}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build .deb package
         run: dpkg-deb --build . "portmap_${VERSION}.deb"
 
@@ -32,11 +41,10 @@ jobs:
 
       - name: Create GitHub Release and Upload Asset
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')  # Exécuter seulement si un tag est poussé
         with:
-          tag_name: ${{ github.ref_name }}  # Utilise le tag de GitHub (ex: v1.2.3)
-          name: "Release ${{ github.ref_name }}"
-          body: "Version ${{ github.ref_name }} de portmap."
+          tag_name: v${{ env.VERSION }}
+          name: "Release v${{ env.VERSION }}"
+          body: "Version v${{ env.VERSION }} de portmap."
           draft: false
           prerelease: false
           files: "portmap_${VERSION}.deb"
