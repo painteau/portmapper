@@ -4,21 +4,31 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Étape 1 : Récupérer le code du dépôt
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Étape 2 : Construire le paquet Debian avec l'action dédiée
-      - name: Build Debian package on multiple architectures
-        uses: docker://ghcr.io/alexjurkiewicz/build-debian-package:v1
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev fakeroot
+
+      - name: Extract version from control file
+        id: get_version
+        run: echo "VERSION=$(grep '^Version:' Debian/control | cut -d ' ' -f 2)" >> $GITHUB_ENV
+
+      - name: Build .deb package
+        run: dpkg-deb --build . "portmap_${VERSION}.deb"
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
         with:
-          architectures: "amd64 arm64"
-        env:
-          DEBFULLNAME: "Painteau"
-          DEBEMAIL: "dev@gochu.fr"
+          name: portmap-deb
+          path: "portmap_${VERSION}.deb"
