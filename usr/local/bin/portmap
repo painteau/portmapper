@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Fichier de configuration
+# Configuration file
 CONFIG_FILE="/etc/portmap.conf"
 
-# Fonction pour créer le fichier de configuration par défaut
+# Function to create the default configuration file
 function create_default_config {
     local config_file="$1"
     if [ ! -f "$config_file" ]; then
@@ -18,7 +18,7 @@ function create_default_config {
     fi
 }
 
-# Fonction pour charger la configuration
+# Function to load the configuration
 function load_config {
     local config_file="$1"
     create_default_config "$config_file"
@@ -29,24 +29,24 @@ function load_config {
     fi
 }
 
-# Variables par défaut (seront écrasées par le fichier de configuration)
+# Default variables (will be overridden by the configuration file)
 DB_FILE="/var/lib/portmap.db"
 START_PORT=3000
 END_PORT=65535
 LOG_FILE="/var/log/portmap.log"
 BACKUP_DIR="/var/lib/portmap_backups"
 HISTORY_FILE="/var/log/portmap_history.log"
-VERSION="1.0.0"
+VERSION="1.1.0"
 
-# Charger la configuration
+# Load the configuration
 load_config "$CONFIG_FILE"
 
-# Arrêter le script en cas d'erreur
+# Stop the script on any error
 set -e
 
-# Fonction pour vérifier les dépendances
+# Function to check dependencies
 function check_dependencies {
-    local dependencies=("jq" "ss")
+    local dependencies=("jq" "ss" "docker")
     for dep in "${dependencies[@]}"; do
         if ! command -v "$dep" &> /dev/null; then
             error "$dep is not installed. Please install it to use this feature."
@@ -54,10 +54,10 @@ function check_dependencies {
     done
 }
 
-# Fonction pour s'assurer que les chemins existent
+# Function to ensure paths exist
 function ensure_path_exists {
     local path="$1"
-    local type="$2" # 'file' ou 'directory'
+    local type="$2" # 'file' or 'directory'
 
     if [ "$type" == "file" ]; then
         local dir
@@ -75,7 +75,7 @@ function ensure_path_exists {
     fi
 }
 
-# Fonction pour vérifier les permissions des fichiers
+# Function to check file permissions
 function check_file_permissions {
     local file="$1"
     if [ ! -w "$file" ]; then
@@ -83,33 +83,33 @@ function check_file_permissions {
     fi
 }
 
-# Fonction pour enregistrer les actions dans le journal
+# Function to log actions
 function log_action {
     local level="$1"
     local message="$2"
     echo "$(date +'%Y-%m-%d %H:%M:%S') - [$level] - $message" >> "$LOG_FILE"
 }
 
-# Fonction pour enregistrer l'historique des modifications
+# Function to log history
 function log_history {
     local action="$1"
     local details="$2"
     echo "$(date +'%Y-%m-%d %H:%M:%S') - $action - $details" >> "$HISTORY_FILE"
 }
 
-# Fonction pour afficher les erreurs et quitter
+# Function to display errors and exit
 function error {
     echo "Error: $1" >&2
     log_action "ERROR" "$1"
     exit 1
 }
 
-# Fonction pour mettre en évidence un message
+# Function to highlight a message
 function highlight {
     echo -e "\033[1;32m$1\033[0m"
 }
 
-# Fonction pour lister les ports
+# Function to list ports
 function list_ports {
     if [ ! -s "$DB_FILE" ]; then
         echo "No ports registered in the database."
@@ -142,7 +142,7 @@ function list_ports {
     echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
 }
 
-# Fonction pour trouver le prochain port disponible
+# Function to find the next available port
 function find_next_free_port {
     for port in $(seq "$START_PORT" "$END_PORT"); do
         if ! grep -q "^${port}," "$DB_FILE"; then
@@ -153,47 +153,47 @@ function find_next_free_port {
     error "No available ports in the range $START_PORT-$END_PORT."
 }
 
-# Fonction pour vérifier si un port est utilisé par le système
+# Function to check if a port is used by the system
 function is_port_used {
     local port="$1"
-    local protocol="$2"  # "tcp" ou "udp"
+    local protocol="$2"  # "tcp" or "udp"
 
-    # Vérifier si le port est utilisé avec ss
+    # Check if the port is used with ss
     if ss -tuln | grep -q ":$port "; then
-        return 0  # Port utilisé
+        return 0  # Port is used
     else
-        return 1  # Port libre
+        return 1  # Port is free
     fi
 }
 
-# Fonction pour ajouter un port
+# Function to add a port
 function add_port {
     local port="$1"
-    local protocol="$2"  # "TCP" ou "UDP"
+    local protocol="$2"  # "TCP" or "UDP"
     local name="$3"
     local description="${4:-}"
     local date_added
     date_added=$(date +'%Y-%m-%d %H:%M:%S')
 
-    # Normaliser le protocole en majuscules
+    # Normalize protocol to uppercase
     protocol=$(echo "$protocol" | tr '[:lower:]' '[:upper:]')
 
-    # Valider le protocole
+    # Validate protocol
     if [[ "$protocol" != "TCP" && "$protocol" != "UDP" ]]; then
         error "Invalid protocol. Use 'TCP' or 'UDP'."
     fi
 
-    # Vérifier si le port est déjà utilisé par le système
+    # Check if the port is already used by the system
     if is_port_used "$port" "$protocol"; then
         error "Port $port is already in use by the system."
     fi
 
-    # Vérifier si le port existe déjà dans la base de données
+    # Check if the port already exists in the database
     if grep -q "^${port}," "$DB_FILE"; then
         error "Port $port already exists in the database."
     fi
 
-    # Ajouter le port à la base de données
+    # Add the port to the database
     echo "$port,$protocol,$name,$description,$date_added" >> "$DB_FILE"
     log_action "INFO" "Added port $port with protocol '$protocol', name '$name', description '$description', and date '$date_added'"
     log_history "ADD" "Port $port added with protocol '$protocol', name '$name', description '$description'"
@@ -202,7 +202,182 @@ function add_port {
     backup_db
 }
 
-# Fonction pour sauvegarder la base de données
+# Function to modify a port
+function modify_port {
+    local port="$1"
+    local protocol="$2"  # "TCP" or "UDP"
+    local name="$3"
+    local description="${4:-}"
+
+    # Normalize protocol to uppercase
+    protocol=$(echo "$protocol" | tr '[:lower:]' '[:upper:]')
+
+    # Validate protocol
+    if [[ "$protocol" != "TCP" && "$protocol" != "UDP" ]]; then
+        error "Invalid protocol. Use 'TCP' or 'UDP'."
+    fi
+
+    # Check if the port exists in the database
+    if ! grep -q "^${port}," "$DB_FILE"; then
+        error "Port $port does not exist in the database."
+    fi
+
+    # Modify the entry
+    sed -i "s/^${port},.*/${port},${protocol},${name},${description},$(date +'%Y-%m-%d %H:%M:%S')/" "$DB_FILE"
+    log_action "INFO" "Modified port $port with protocol '$protocol', name '$name', description '$description'"
+    log_history "MODIFY" "Port $port modified with protocol '$protocol', name '$name', description '$description'"
+    highlight "Port $port has been successfully modified."
+
+    backup_db
+}
+
+# Function to delete a port
+function delete_port {
+    local identifier="$1"
+
+    if [[ "$identifier" =~ ^[0-9]+$ ]]; then
+        # Delete by port
+        if grep -q "^${identifier}," "$DB_FILE"; then
+            sed -i "/^${identifier},/d" "$DB_FILE"
+            log_action "INFO" "Deleted port $identifier"
+            log_history "DELETE" "Port $identifier deleted"
+            highlight "Port $identifier has been successfully deleted."
+        else
+            error "Port $identifier does not exist in the database."
+        fi
+    else
+        # Delete by name
+        if grep -q ",${identifier}," "$DB_FILE"; then
+            sed -i "/,${identifier},/d" "$DB_FILE"
+            log_action "INFO" "Deleted entry with name $identifier"
+            log_history "DELETE" "Entry with name $identifier deleted"
+            highlight "Entry with name $identifier has been successfully deleted."
+        else
+            error "No entry with name $identifier found in the database."
+        fi
+    fi
+
+    backup_db
+}
+
+# Function to reset the database
+function reset_db {
+    echo "Are you sure you want to reset the database? This action cannot be undone. (y/n)"
+    read -r confirmation
+    if [[ "$confirmation" =~ ^[yY]$ ]]; then
+        > "$DB_FILE"
+        log_action "INFO" "Database reset"
+        log_history "RESET" "Database reset"
+        highlight "Database has been reset."
+    else
+        echo "Operation cancelled."
+    fi
+}
+
+# Function to export the database to JSON
+function export_to_json {
+    local output_file="$1"
+
+    if [[ -z "$output_file" || "$output_file" == *[';|&']* ]]; then
+        error "Invalid file path for export."
+    fi
+
+    ensure_path_exists "$output_file" file
+
+    echo "[" > "$output_file"
+    local first_entry=true
+    while IFS=, read -r port protocol name description date_added; do
+        if [ "$first_entry" = true ]; then
+            first_entry=false
+        else
+            echo "," >> "$output_file"
+        fi
+        if [ -z "$description" ]; then
+            description="null"
+        fi
+        echo "  {\"port\": \"$port\", \"protocol\": \"$protocol\", \"name\": \"$name\", \"description\": $description, \"date_added\": \"$date_added\"}" >> "$output_file"
+    done < "$DB_FILE"
+    echo "]" >> "$output_file"
+
+    log_action "INFO" "Exported database to JSON file $output_file"
+    highlight "Database exported to $output_file"
+}
+
+# Function to search ports
+function search_ports {
+    local keyword="$1"
+    local count=0
+
+    echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
+    echo -e "|  Port   |  Protocol  |       Name        |      Description      |     Date Added      |"
+    echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
+
+    while IFS=, read -r port protocol name description date_added; do
+        if echo "$name $description" | grep -iq "$keyword"; then
+            description=$(echo "$description" | sed 's/^"\(.*\)"$/\1/')
+            wrapped_description=$(echo "$description" | fold -s -w 22)
+            first_line=true
+
+            while IFS= read -r desc_line; do
+                if [ -z "$desc_line" ]; then
+                    desc_line=" "
+                fi
+
+                if [ "$first_line" = true ]; then
+                    printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" "$port" "$protocol" "$name" "$desc_line" "$date_added"
+                    first_line=false
+                else
+                    printf "| %-7s | %-10s | %-17s | %-21s | %-19s |\n" " " " " " " "$desc_line" " "
+                fi
+            done <<< "$wrapped_description"
+            count=$((count + 1))
+        fi
+    done < "$DB_FILE"
+
+    echo -e "+---------+------------+-------------------+-----------------------+---------------------+"
+
+    if [ "$count" -eq 0 ]; then
+        echo "No matches found for '$keyword'."
+    fi
+}
+
+# Function to sync Docker container ports
+function sync_docker_ports {
+    local container_name="$1"  # "all" or a specific container name
+    log_action "INFO" "Syncing Docker container ports with portmap..."
+
+    # Get Docker container names and exposed ports
+    docker ps --format "{{.Names}} {{.Ports}}" | while read -r docker_container_name ports; do
+        # Skip if a specific container is targeted and it doesn't match
+        if [[ "$container_name" != "all" && "$docker_container_name" != "$container_name" ]]; then
+            continue
+        fi
+
+        # Parse exposed ports (format: 0.0.0.0:PORT_EXTERNE->PORT_INTERNE/protocole)
+        echo "$ports" | grep -oP '\d+->\d+/(tcp|udp)' | while IFS=-> read -r external_port internal_port_protocol; do
+            external_port=$(echo "$external_port" | cut -d':' -f2)
+            internal_port=$(echo "$internal_port_protocol" | cut -d'/' -f1)
+            protocol=$(echo "$internal_port_protocol" | cut -d'/' -f2 | tr '[:lower:]' '[:upper:]')  # Convert to uppercase (TCP/UDP)
+
+            # Check if the external port is already in the database
+            if ! grep -q "^${external_port}," "$DB_FILE"; then
+                # Add the port to the database
+                add_port "$external_port" "$protocol" "$docker_container_name" "Docker container: $docker_container_name (internal port: $internal_port)"
+                log_action "INFO" "Added Docker container port: $external_port (container: $docker_container_name, protocol: $protocol)"
+            else
+                log_action "INFO" "Port $external_port already exists in the database (container: $docker_container_name)."
+            fi
+        done
+    done
+
+    if [[ "$container_name" == "all" ]]; then
+        highlight "All Docker container ports have been synced with portmap."
+    else
+        highlight "Docker container ports for '$container_name' have been synced with portmap."
+    fi
+}
+
+# Function to backup the database
 function backup_db {
     ensure_path_exists "$BACKUP_DIR" directory
     local timestamp
@@ -211,7 +386,7 @@ function backup_db {
     log_action "INFO" "Database backup created at $BACKUP_DIR/portmap_${timestamp}.db"
 }
 
-# Fonction pour restaurer la base de données
+# Function to restore the database
 function restore_db {
     local backup_file="$1"
     if [ ! -f "$backup_file" ]; then
@@ -222,40 +397,7 @@ function restore_db {
     highlight "Database has been restored from $backup_file."
 }
 
-# Fonction pour importer des ports depuis un fichier
-function import_ports {
-    local file="$1"
-
-    if [ ! -f "$file" ]; then
-        error "File $file does not exist."
-    fi
-
-    # Vérifier le format du fichier (CSV ou JSON)
-    if [[ "$file" == *.csv ]]; then
-        # Importer depuis un fichier CSV
-        while IFS=, read -r port protocol name description; do
-            add_port "$port" "$protocol" "$name" "$description"
-        done < "$file"
-    elif [[ "$file" == *.json ]]; then
-        # Importer depuis un fichier JSON
-        local ports
-        ports=$(jq -c '.[]' "$file")
-        echo "$ports" | while IFS= read -r port_data; do
-            local port protocol name description
-            port=$(echo "$port_data" | jq -r '.port')
-            protocol=$(echo "$port_data" | jq -r '.protocol')
-            name=$(echo "$port_data" | jq -r '.name')
-            description=$(echo "$port_data" | jq -r '.description')
-            add_port "$port" "$protocol" "$name" "$description"
-        done
-    else
-        error "Unsupported file format. Use CSV or JSON."
-    fi
-
-    highlight "Ports have been imported from $file."
-}
-
-# Fonction pour démarrer l'API REST
+# Function to start the REST API
 function start_api {
     local port="${1:-8080}"
     log_action "INFO" "Starting API on port $port"
@@ -268,12 +410,12 @@ function start_api {
     done
 }
 
-# Fonction pour afficher la version
+# Function to display the version
 function display_version {
     echo "portmap version $VERSION"
 }
 
-# Fonction pour afficher l'aide
+# Function to display help
 function display_help {
     echo "Usage:"
     echo "  portmap               - List registered ports"
@@ -296,7 +438,7 @@ function display_help {
     echo "  portmap --api <port>  - Start the REST API"
 }
 
-# Fonction principale
+# Main function
 function main {
     local CONFIG_FILE="/etc/portmap.conf"
     load_config "$CONFIG_FILE"
@@ -314,11 +456,33 @@ function main {
             error "Usage: portmap -a, --add <port> <protocol> <name> [<description>]"
         fi
         add_port "$2" "$3" "$4" "$5"
+    elif [ "$1" == "-m" ] || [ "$1" == "--modify" ]; then
+        if [ "$#" -ne 5 ]; then
+            error "Usage: portmap -m, --modify <port> <protocol> <name> <description>"
+        fi
+        modify_port "$2" "$3" "$4" "$5"
+    elif [ "$1" == "-d" ] || [ "$1" == "--delete" ] || [ "$1" == "-r" ] || [ "$1" == "--remove" ]; then
+        if [ -z "$2" ]; then
+            error "Please provide a port or name to delete."
+        fi
+        delete_port "$2"
+    elif [ "$1" == "--reset" ]; then
+        reset_db
+    elif [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+        display_help
+        exit 0
+    elif [ "$1" == "-b" ] || [ "$1" == "--backup" ]; then
+        backup_db
     elif [ "$1" == "-s" ] || [ "$1" == "--search" ]; then
         if [ -z "$2" ]; then
             error "Please provide a keyword to search for."
         fi
         search_ports "$2"
+    elif [ "$1" == "-e" ] || [ "$1" == "--export" ]; then
+        if [ -z "$2" ]; then
+            error "Please provide a file path for export."
+        fi
+        export_to_json "$2"
     elif [ "$1" == "--docker" ]; then
         if [ -z "$2" ]; then
             error "Usage: portmap --docker all | portmap --docker <container-name>"
@@ -344,5 +508,5 @@ function main {
     fi
 }
 
-# Démarrer le script
+# Start the script
 main "$@"
