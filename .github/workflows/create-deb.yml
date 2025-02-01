@@ -28,12 +28,9 @@ jobs:
       - name: Build .deb package
         run: dpkg-deb --build . "portmap_${VERSION}.deb"
 
-      # Étape 5 : Téléverser le package .deb en tant qu'artefact (optionnel, pour archivage)
-      - name: Upload package as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: portmap-deb
-          path: "portmap_${VERSION}.deb"
+      # Étape 5 : Lister les fichiers pour débogage
+      - name: List files (debug)
+        run: ls -l
 
       # Étape 6 : Créer une release GitHub et attacher le package .deb
       - name: Create GitHub Release and Upload Asset
@@ -47,4 +44,4 @@ jobs:
           prerelease: false  # La release n'est pas une préversion
           files: "portmap_${VERSION}.deb"  # Fichier .deb à attacher à la release
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}  # Utilise un Personal Access Token pour l'authentification
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Utilise le token par défaut de GitHub
