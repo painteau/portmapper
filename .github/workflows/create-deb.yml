@@ -22,7 +22,10 @@ jobs:
       # Étape 3 : Extraire la version du fichier Debian/control
       - name: Extract version from control file
         id: get_version
-        run: echo "VERSION=$(grep '^Version:' Debian/control | cut -d ' ' -f 2)" >> $GITHUB_ENV
+        run: |
+          VERSION=$(grep '^Version:' Debian/control | cut -d ' ' -f 2)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Extracted version: ${VERSION}"  # Affiche la version extraite pour débogage
 
       # Étape 4 : Construire le package .deb
       - name: Build .deb package
