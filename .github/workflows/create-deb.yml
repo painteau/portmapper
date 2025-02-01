@@ -4,41 +4,47 @@ on:
   push:
     tags:
       - 'v*.*.*'  # Déclenchement uniquement sur un tag versionné (ex: v1.2.3)
-  workflow_dispatch:
+  workflow_dispatch:  # Permet de déclencher manuellement le workflow
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # Étape 1 : Récupérer le code source du dépôt
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Étape 2 : Installer les dépendances nécessaires pour construire le package .deb
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y dpkg-dev fakeroot
 
+      # Étape 3 : Extraire la version du fichier Debian/control
       - name: Extract version from control file
         id: get_version
         run: echo "VERSION=$(grep '^Version:' Debian/control | cut -d ' ' -f 2)" >> $GITHUB_ENV
 
+      # Étape 4 : Construire le package .deb
       - name: Build .deb package
         run: dpkg-deb --build . "portmap_${VERSION}.deb"
 
+      # Étape 5 : Téléverser le package .deb en tant qu'artefact (optionnel, pour archivage)
       - name: Upload package as artifact
         uses: actions/upload-artifact@v4
         with:
           name: portmap-deb
           path: "portmap_${VERSION}.deb"
 
+      # Étape 6 : Créer une release GitHub et attacher le package .deb
       - name: Create GitHub Release and Upload Asset
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')  # Exécuter seulement si un tag est poussé
         with:
           tag_name: ${{ github.ref_name }}  # Utilise le tag de GitHub (ex: v1.2.3)
-          name: "Release ${{ github.ref_name }}"
-          body: "Version ${{ github.ref_name }} de portmap."
-          draft: false
-          prerelease: false
-          files: "portmap_${VERSION}.deb"
+          name: "Release ${{ github.ref_name }}"  # Nom de la release
+          body: "Version ${{ github.ref_name }} de portmap."  # Description de la release
+          draft: false  # La release n'est pas un brouillon
+          prerelease: false  # La release n'est pas une préversion
+          files: "portmap_${VERSION}.deb"  # Fichier .deb à attacher à la release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Utilise le token par défaut de GitHub
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}  # Utilise un Personal Access Token pour l'authentification
