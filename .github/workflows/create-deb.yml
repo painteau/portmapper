@@ -3,48 +3,71 @@ name: Build and Release Debian Package
 on:
   push:
     tags:
-      - 'v*.*.*'  # Déclenchement uniquement sur un tag versionné (ex: v1.2.3)
-  workflow_dispatch:  # Permet de déclencher manuellement le workflow
+      - 'v*.*.*'  # Trigger only on versioned tags (e.g., v1.2.3)
+  workflow_dispatch:  # Allows manual triggering of the workflow
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # Étape 1 : Récupérer le code source du dépôt
+      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Étape 2 : Installer les dépendances nécessaires pour construire le package .deb
+      # Step 2: Install required dependencies for building the .deb package
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y dpkg-dev fakeroot
 
-      # Étape 3 : Extraire la version du fichier DEBIAN/control
+      # Step 3: Extract the version from the DEBIAN/control file
       - name: Extract version from control file
         id: get_version
         run: |
           VERSION=$(grep '^Version:' DEBIAN/control | cut -d ' ' -f 2)
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "Extracted version: ${VERSION}"  # Affiche la version extraite pour débogage
+          echo "Extracted version: ${VERSION}"  # Display extracted version for debugging
 
-      # Étape 4 : Construire le package .deb
+      # Step 4: Verify extracted version is not empty
+      - name: Verify extracted version
+        run: |
+          if [ -z "${VERSION}" ]; then
+            echo "Error: VERSION is empty!"
+            exit 1
+          fi
+
+      # Step 5: Build the .deb package
       - name: Build .deb package
         run: dpkg-deb --build . "portmap_${VERSION}.deb"
 
-      # Étape 5 : Lister les fichiers pour débogage
+      # Step 6: Verify that the .deb file was created
+      - name: Check if .deb file exists
+        run: |
+          if [ ! -f "portmap_${VERSION}.deb" ]; then
+            echo "Error: Debian package not found!"
+            ls -lah  # List files to identify the issue
+            exit 1
+          fi
+
+      # Step 7: Generate a SHA256 checksum for the .deb file
+      - name: Generate SHA256 checksum
+        run: sha256sum "portmap_${VERSION}.deb" > "portmap_${VERSION}.sha256"
+
+      # Step 8: List files for debugging
       - name: List files (debug)
         run: ls -l
 
-      # Étape 6 : Créer une release GitHub et attacher le package .deb
-      - name: Create GitHub Release and Upload Asset
+      # Step 9: Create a GitHub release and upload the package
+      - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')  # Exécuter seulement si un tag est poussé
+        if: startsWith(github.ref, 'refs/tags/v')  # Execute only if a tag is pushed
         with:
-          tag_name: ${{ github.ref_name }}  # Utilise le tag de GitHub (ex: v1.2.3)
-          name: "Release ${{ github.ref_name }}"  # Nom de la release
-          body: "Version ${{ github.ref_name }} de portmap."  # Description de la release
-          draft: false  # La release n'est pas un brouillon
-          prerelease: false  # La release n'est pas une préversion
-          files: "portmap_${VERSION}.deb"  # Fichier .deb à attacher à la release
+          tag_name: ${{ github.ref_name }}  # Use GitHub tag (e.g., v1.2.3)
+          name: "Release ${{ github.ref_name }}"  # Release name
+          body: "Version ${{ github.ref_name }} of portmap."  # Release description
+          draft: false  # The release is not a draft
+          prerelease: false  # The release is not a pre-release
+          files: |
+            portmap_${{ env.VERSION }}.deb
+            portmap_${{ env.VERSION }}.sha256
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}  
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}  # Use the personal access token (PAT)
