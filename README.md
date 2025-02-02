@@ -1,6 +1,6 @@
-# PortMap
+# PortMapper
 
-PortMap is a Bash script designed to efficiently manage and track port assignments. It enables users to list, add, delete, and search for registered ports while maintaining a log of changes. The script also includes backup and restore functionalities, as well as an optional REST API for remote access.
+PortMapper is a Bash script designed to efficiently manage and track port assignments. It enables users to list, add, delete, and search for registered ports while maintaining a log of changes. The script also includes backup and restore functionalities, as well as an optional REST API for remote access.
 
 ## Features
 
@@ -15,94 +15,94 @@ PortMap is a Bash script designed to efficiently manage and track port assignmen
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/painteau/portmap.git
-   cd portmap
+   git clone https://github.com/painteau/portmapper.git
+   cd portmapper
    ```
 2. Make the script executable and move it to a directory in your `$PATH`:
    ```bash
-   chmod +x portmap
-   sudo mv portmap /usr/local/bin/
+   chmod +x portmapper
+   sudo mv portmapper /usr/local/bin/
    ```
 3. Verify installation:
    ```bash
-   portmap --version
+   portmapper —version
    ```
 
 ## Usage
 
 ### Listing Ports
 ```bash
-portmap --list
+portmapper —list
 ```
 
 ### Adding a Port
 ```bash
-portmap --add <port> <protocol> <name> [description]
+portmapper —add <port> <protocol> <name> [description]
 ```
 Example:
 ```bash
-portmap --add 8080 TCP "Web Server" "Used for serving HTTP requests"
+portmapper —add 8080 TCP “Web Server” “Used for serving HTTP requests”
 ```
 
 ### Searching Ports
 ```bash
-portmap --search <keyword>
+portmapper —search <keyword>
 ```
 
 ### Finding the Next Available Port
 ```bash
-portmap --next
+portmapper —next
 ```
 
 ### Deleting a Port
 ```bash
-portmap --delete <port>
+portmapper —delete <port>
 ```
 
 ### Backing Up the Database
 ```bash
-portmap --backup
+portmapper —backup
 ```
 
 ### Restoring a Backup
 ```bash
-portmap --restore <backup-file>
+portmapper —restore <backup-file>
 ```
 
 ### Importing Ports from a File
 Supports CSV and JSON formats:
 ```bash
-portmap --import <file>
+portmapper —import <file>
 ```
 
 ### Exporting Ports to JSON
 ```bash
-portmap --export <file>
+portmapper —export <file>
 ```
 
 ### Running the REST API
 ```bash
-portmap --api 8080
+portmapper —api 8080
 ```
 
 ### Syncing Ports from Docker
 ```bash
-portmap --docker all
+portmapper —docker all
 ```
 For a specific container:
 ```bash
-portmap --docker <container-name>
+portmapper —docker <container-name>
 ```
 
 ## Configuration
 
-PortMap uses a configuration file located at `/etc/portmap.conf`. Default values include:
+PortMapper uses a configuration file located at `/etc/portmapper.conf`. Default values include:
 
-- **Database file**: `/var/lib/portmap.db`
+- **Database file**: `/var/lib/portmapper.db`
 - **Port range**: `3000-65535`
-- **Log file**: `/var/log/portmap.log`
-- **Backup directory**: `/var/lib/portmap_backups`
-- **History file**: `/var/log/portmap_history.log`
+- **Log file**: `/var/log/portmapper.log`
+- **Backup directory**: `/var/lib/portmapper_backups`
+- **History file**: `/var/log/portmapper_history.log`
 
 ## Dependencies
 
@@ -118,6 +118,6 @@ This project is licensed under the MIT License.
 
 Feel free to fork the repository, submit issues, or create pull requests to improve the script.
 
----
+—
 
-GitHub Repository: [PortMap](https://github.com/painteau/portmap)
+GitHub Repository: [PortMapper](https://github.com/painteau/portmapper)

@@ -1,19 +1,19 @@
 #!/bin/bash
 
 # Configuration file
-CONFIG_FILE="/etc/portmap.conf"
+CONFIG_FILE="/etc/portmapper.conf"
 
 # Function to create the default configuration file
 function create_default_config {
     local config_file="$1"
     if [ ! -f "$config_file" ]; then
-        echo "# Portmap configuration file" > "$config_file"
-        echo "DB_FILE=\"/var/lib/portmap.db\"" >> "$config_file"
+        echo "# Portmapper configuration file" > "$config_file"
+        echo "DB_FILE=\"/var/lib/portmapper.db\"" >> "$config_file"
         echo "START_PORT=3000" >> "$config_file"
         echo "END_PORT=65535" >> "$config_file"
-        echo "LOG_FILE=\"/var/log/portmap.log\"" >> "$config_file"
-        echo "BACKUP_DIR=\"/var/lib/portmap_backups\"" >> "$config_file"
-        echo "HISTORY_FILE=\"/var/log/portmap_history.log\"" >> "$config_file"
+        echo "LOG_FILE=\"/var/log/portmapper.log\"" >> "$config_file"
+        echo "BACKUP_DIR=\"/var/lib/portmapper_backups\"" >> "$config_file"
+        echo "HISTORY_FILE=\"/var/log/portmapper_history.log\"" >> "$config_file"
         log_action "INFO" "Created default configuration file at $config_file"
     fi
 }
@@ -30,12 +30,12 @@ function load_config {
 }
 
 # Default variables (will be overridden by the configuration file)
-DB_FILE="/var/lib/portmap.db"
+DB_FILE="/var/lib/portmapper.db"
 START_PORT=3000
 END_PORT=65535
-LOG_FILE="/var/log/portmap.log"
-BACKUP_DIR="/var/lib/portmap_backups"
-HISTORY_FILE="/var/log/portmap_history.log"
+LOG_FILE="/var/log/portmapper.log"
+BACKUP_DIR="/var/lib/portmapper_backups"
+HISTORY_FILE="/var/log/portmapper_history.log"
 VERSION="1.1.5"
 
 # Load the configuration
@@ -344,7 +344,7 @@ function search_ports {
 # Function to sync Docker container ports
 function sync_docker_ports {
     local container_name="$1"  # "all" or a specific container name
-    log_action "INFO" "Syncing Docker container ports with portmap..."
+    log_action "INFO" "Syncing Docker container ports with portmapper..."
 
     # Get Docker container names and exposed ports
     docker ps --format "{{.Names}} {{.Ports}}" | while read -r docker_container_name ports; do
@@ -371,9 +371,9 @@ function sync_docker_ports {
     done
 
     if [[ "$container_name" == "all" ]]; then
-        highlight "All Docker container ports have been synced with portmap."
+        highlight "All Docker container ports have been synced with portmapper."
     else
-        highlight "Docker container ports for '$container_name' have been synced with portmap."
+        highlight "Docker container ports for '$container_name' have been synced with portmapper."
     fi
 }
 
@@ -382,8 +382,8 @@ function backup_db {
     ensure_path_exists "$BACKUP_DIR" directory
     local timestamp
     timestamp=$(date +'%Y%m%d%H%M%S')
-    cp "$DB_FILE" "$BACKUP_DIR/portmap_${timestamp}.db"
-    log_action "INFO" "Database backup created at $BACKUP_DIR/portmap_${timestamp}.db"
+    cp "$DB_FILE" "$BACKUP_DIR/portmapper_${timestamp}.db"
+    log_action "INFO" "Database backup created at $BACKUP_DIR/portmapper_${timestamp}.db"
 }
 
 # Function to restore the database
@@ -412,101 +412,33 @@ function start_api {
 
 # Function to display the version
 function display_version {
-    echo "portmap version $VERSION"
+    echo "portmapper version $VERSION"
 }
 
 # Function to display help
 function display_help {
     echo "Usage:"
-    echo "  portmap               - List registered ports"
-    echo "  portmap -l, --list    - List registered ports"
-    echo "  portmap -n, --next    - Find the next available port"
-    echo "  portmap -a, --add <port> <protocol> <name> [<description>] - Add a new port (protocol: TCP or UDP, case-insensitive)"
-    echo "  portmap -m, --modify <port> <protocol> <name> <description> - Modify an existing port"
-    echo "  portmap -d, --delete <identifier> - Delete entry by port or name"
-    echo "  portmap -r, --remove <identifier> - Delete entry by port or name (same as -d)"
-    echo "  portmap --reset       - Reset the database"
-    echo "  portmap -h, --help    - Display this help message"
-    echo "  portmap -b, --backup  - Backup the database"
-    echo "  portmap -s, --search <keyword>  - Search ports by name or description"
-    echo "  portmap -e, --export <file>     - Export database to JSON file"
-    echo "  portmap --docker all            - Sync all Docker container ports"
-    echo "  portmap --docker <container>    - Sync ports for a specific Docker container"
-    echo "  portmap -i, --import <file>     - Import ports from a CSV or JSON file"
-    echo "  portmap --restore <backup-file> - Restore the database from a backup"
-    echo "  portmap --version     - Display the version"
-    echo "  portmap --api <port>  - Start the REST API"
+    echo "  portmapper               - List registered ports"
+    echo "  portmapper -l, --list    - List registered ports"
+    echo "  portmapper -n, --next    - Find the next available port"
+    echo "  portmapper -a, --add <port> <protocol> <name> [<description>] - Add a new port (protocol: TCP or UDP, case-insensitive)"
+    echo "  portmapper -m, --modify <port> <protocol> <name> <description> - Modify an existing port"
+    echo "  portmapper -d, --delete <identifier> - Delete entry by port or name"
+    echo "  portmapper -r, --remove <identifier> - Delete entry by port or name (same as -d)"
+    echo "  portmapper --reset       - Reset the database"
+    echo "  portmapper -h, --help    - Display this help message"
+    echo "  portmapper -b, --backup  - Backup the database"
+    echo "  portmapper -s, --search <keyword>  - Search ports by name or description"
+    echo "  portmapper -e, --export <file>     - Export database to JSON file"
+    echo "  portmapper --docker all            - Sync all Docker container ports"
+    echo "  portmapper --docker <container>    - Sync ports for a specific Docker container"
+    echo "  portmapper -i, --import <file>     - Import ports from a CSV or JSON file"
+    echo "  portmapper --restore <backup-file> - Restore the database from a backup"
+    echo "  portmapper --version     - Display the version"
+    echo "  portmapper --api <port>  - Start the REST API"
 }
 
 # Main function
 function main {
-    local CONFIG_FILE="/etc/portmap.conf"
-    load_config "$CONFIG_FILE"
-    check_dependencies
-    ensure_path_exists "$DB_FILE" file
-    ensure_path_exists "$LOG_FILE" file
-    ensure_path_exists "$BACKUP_DIR" directory
-
-    if [ "$#" -eq 0 ] || [ "$1" == "-l" ] || [ "$1" == "--list" ]; then
-        list_ports
-    elif [ "$1" == "-n" ] || [ "$1" == "--next" ]; then
-        find_next_free_port
-    elif [ "$1" == "-a" ] || [ "$1" == "--add" ]; then
-        if [ "$#" -ne 5 ] && [ "$#" -ne 6 ]; then
-            error "Usage: portmap -a, --add <port> <protocol> <name> [<description>]"
-        fi
-        add_port "$2" "$3" "$4" "$5"
-    elif [ "$1" == "-m" ] || [ "$1" == "--modify" ]; then
-        if [ "$#" -ne 5 ]; then
-            error "Usage: portmap -m, --modify <port> <protocol> <name> <description>"
-        fi
-        modify_port "$2" "$3" "$4" "$5"
-    elif [ "$1" == "-d" ] || [ "$1" == "--delete" ] || [ "$1" == "-r" ] || [ "$1" == "--remove" ]; then
-        if [ -z "$2" ]; then
-            error "Please provide a port or name to delete."
-        fi
-        delete_port "$2"
-    elif [ "$1" == "--reset" ]; then
-        reset_db
-    elif [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
-        display_help
-        exit 0
-    elif [ "$1" == "-b" ] || [ "$1" == "--backup" ]; then
-        backup_db
-    elif [ "$1" == "-s" ] || [ "$1" == "--search" ]; then
-        if [ -z "$2" ]; then
-            error "Please provide a keyword to search for."
-        fi
-        search_ports "$2"
-    elif [ "$1" == "-e" ] || [ "$1" == "--export" ]; then
-        if [ -z "$2" ]; then
-            error "Please provide a file path for export."
-        fi
-        export_to_json "$2"
-    elif [ "$1" == "--docker" ]; then
-        if [ -z "$2" ]; then
-            error "Usage: portmap --docker all | portmap --docker <container-name>"
-        fi
-        sync_docker_ports "$2"
-    elif [ "$1" == "-i" ] || [ "$1" == "--import" ]; then
-        if [ -z "$2" ]; then
-            error "Usage: portmap -i, --import <file>"
-        fi
-        import_ports "$2"
-    elif [ "$1" == "--restore" ]; then
-        if [ -z "$2" ]; then
-            error "Usage: portmap --restore <backup-file>"
-        fi
-        restore_db "$2"
-    elif [ "$1" == "--version" ]; then
-        display_version
-    elif [ "$1" == "--api" ]; then
-        start_api "$2"
-    else
-        display_help
-        exit 1
-    fi
-}
-
-# Start the script
-main "$@"
+    local CONFIG_FILE="/etc/portmapper.conf"
+    load_config

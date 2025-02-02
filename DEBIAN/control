@@ -1,11 +1,11 @@
-Package: portmap
-Version: 1.1.5
+Package: portmapper
+Version: 1.1.6
 Section: utils
 Priority: optional
 Architecture: all
 Maintainer: Painteau <dev@gochu.fr>
-Description: Portmap - A powerful tool for managing port assignments
- Portmap is a lightweight command-line utility designed to simplify
+Description: Portmapper - A powerful tool for managing port assignments
+ Portmapper is a lightweight command-line utility designed to simplify
  port management for developers and administrators. It allows users
  to add, delete, search, and export port assignments with ease.
  .
@@ -16,10 +16,10 @@ Description: Portmap - A powerful tool for managing port assignments
   - Search functionality to quickly find port information.
   - Reset the database with the `--reset` command.
   - Enhanced port deletion and modification with `-d`, `-r`, `--remove`.
-  - Listing ports with `portmap`, `portmap -l`, or `portmap --list`.
+  - Listing ports with `portmapper`, `portmapper -l`, or `portmapper --list`.
   - Clean descriptions to remove problematic characters before insertion.
  .
- Portmap is ideal for managing ports in complex environments,
+ Portmapper is ideal for managing ports in complex environments,
  such as Docker-based workflows or networked applications.
  .
  Examples include adding a port with metadata, exporting the database
