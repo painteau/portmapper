@@ -5,10 +5,17 @@ on:
     tags:
       - 'v*.*.*'  # Trigger only on versioned tags (e.g., v1.2.3)
   workflow_dispatch:  # Allows manual triggering of the workflow
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.2.0)'
+        required: false
+        type: string
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating releases
 
     steps:
       # Step 1: Checkout the repository
@@ -25,9 +32,26 @@ jobs:
         run: |
           VERSION=$(grep '^Version:' DEBIAN/control | cut -d ' ' -f 2)
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
-          echo "Extracted version: ${VERSION}"  # Display extracted version for debugging
+          echo "Extracted version: ${VERSION}"
 
-      # Step 4: Verify extracted version is not empty
+      # Step 4: Determine tag name (from git tag or manual input)
+      - name: Determine tag name
+        id: tag_name
+        run: |
+          if [ "${{ github.event_name }}" == "push" ]; then
+            # Triggered by tag push
+            TAG_NAME="${{ github.ref_name }}"
+          elif [ -n "${{ inputs.version }}" ]; then
+            # Manually triggered with version input
+            TAG_NAME="v${{ inputs.version }}"
+          else
+            # Manually triggered without input, use version from control file
+            TAG_NAME="v${VERSION}"
+          fi
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
+          echo "Using tag: ${TAG_NAME}"
+
+      # Step 5: Verify extracted version is not empty
       - name: Verify extracted version
         run: |
           if [ -z "${VERSION}" ]; then
@@ -35,39 +59,70 @@ jobs:
             exit 1
           fi
 
-      # Step 5: Build the .deb package
+      # Step 6: Build the .deb package
       - name: Build .deb package
-        run: dpkg-deb --build . "portmap_${VERSION}.deb"
+        run: dpkg-deb --build . "portmapper_${VERSION}.deb"
 
-      # Step 6: Verify that the .deb file was created
+      # Step 7: Verify that the .deb file was created
       - name: Check if .deb file exists
         run: |
-          if [ ! -f "portmap_${VERSION}.deb" ]; then
+          if [ ! -f "portmapper_${VERSION}.deb" ]; then
             echo "Error: Debian package not found!"
-            ls -lah  # List files to identify the issue
+            ls -lah
             exit 1
           fi
 
-      # Step 7: Generate a SHA256 checksum for the .deb file
+      # Step 8: Generate a SHA256 checksum for the .deb file
       - name: Generate SHA256 checksum
-        run: sha256sum "portmap_${VERSION}.deb" > "portmap_${VERSION}.sha256"
+        run: sha256sum "portmapper_${VERSION}.deb" > "portmapper_${VERSION}.sha256"
 
-      # Step 8: List files for debugging
+      # Step 9: Extract release notes from CHANGELOG
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract the section for the current version
+            awk '/^## \['"${VERSION}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md > release_notes.md
+
+            # If release notes are empty, use a default message
+            if [ ! -s release_notes.md ]; then
+              echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." > release_notes.md
+            fi
+          else
+            echo "Version ${VERSION} of PortMapper." > release_notes.md
+            echo "" >> release_notes.md
+            echo "See the repository for details." >> release_notes.md
+          fi
+
+          echo "Release notes:"
+          cat release_notes.md
+
+      # Step 10: List files for debugging
       - name: List files (debug)
-        run: ls -l
+        run: ls -lh *.deb *.sha256 2>/dev/null || ls -lh
 
-      # Step 9: Create a GitHub release and upload the package
+      # Step 11: Create or update GitHub release and upload the package
       - name: Create GitHub Release and Upload Assets
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')  # Execute only if a tag is pushed
         with:
-          tag_name: ${{ github.ref_name }}  # Use GitHub tag (e.g., v1.2.3)
-          name: "Release ${{ github.ref_name }}"  # Release name
-          body: "Version ${{ github.ref_name }} of portmap."  # Release description
-          draft: false  # The release is not a draft
-          prerelease: false  # The release is not a pre-release
+          tag_name: ${{ env.TAG_NAME }}
+          name: "PortMapper ${{ env.TAG_NAME }}"
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
           files: |
-            portmap_${{ env.VERSION }}.deb
-            portmap_${{ env.VERSION }}.sha256
+            portmapper_${{ env.VERSION }}.deb
+            portmapper_${{ env.VERSION }}.sha256
+          make_latest: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}  # Use the personal access token (PAT)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Step 12: Upload artifacts for manual download
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: portmapper-${{ env.VERSION }}
+          path: |
+            portmapper_${{ env.VERSION }}.deb
+            portmapper_${{ env.VERSION }}.sha256
+          retention-days: 90
