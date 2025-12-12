@@ -12,6 +12,10 @@ PortMapper is a **Bash script** designed to efficiently manage and track **port 
 - ✅ **Dependency Checking**: Verifies required tools (`jq`, `ss`) are installed.
 - 🌐 **REST API Support**: Lightweight API to retrieve port information.
 - 🐳 **Docker Integration**: Sync ports from running Docker containers.
+- 🔒 **Security Hardening**: Protected against code injection and command injection.
+- 🔐 **File Locking**: Prevents data corruption from concurrent access.
+- ✔️ **Port Validation**: Validates port numbers (1-65535) and checks system availability.
+- 🛡️ **Secure JSON Export**: Uses `jq` to properly escape special characters.
 
 ---
 
@@ -97,7 +101,18 @@ This project is licensed under the **MIT License**.
 
 ## ⚠ Security Notice
 
-Ensure that you expose the API securely and restrict access if necessary when deploying in a production environment.
+PortMapper v1.2.0+ includes several security improvements:
+
+- **Configuration files** are parsed securely to prevent code injection attacks
+- **Input validation** ensures port numbers are within valid ranges (1-65535)
+- **JSON exports** use `jq` to properly escape special characters
+- **File locking** prevents race conditions and data corruption
+- **API endpoints** include basic validation and proper HTTP response codes
+
+When deploying in production:
+- Restrict access to the REST API (firewall, reverse proxy with authentication)
+- Ensure configuration files (`/etc/portmapper.conf`) have proper permissions (600 or 644)
+- Regularly backup your port database using `portmapper --backup`
 
 ---
 

@@ -10,7 +10,7 @@ END_PORT=65535
 LOG_FILE="/var/log/portmapper.log"
 BACKUP_DIR="/var/lib/portmapper_backups"
 HISTORY_FILE="/var/log/portmapper_history.log"
-VERSION="1.1.6"
+VERSION="1.2.0"
 
 # Lock file for concurrent access protection
 LOCK_FILE="/var/run/portmapper.lock"
